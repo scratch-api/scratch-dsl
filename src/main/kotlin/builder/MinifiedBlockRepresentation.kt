@@ -4,21 +4,22 @@ sealed interface MinifiedBlockRepresentation {
     val type: Int
     companion object {
 
-        interface ValueRepresentation<V> : MinifiedBlockRepresentation {
-            val value: V
+        interface ValueRepresentation : MinifiedBlockRepresentation {
+            val value: String
         }
 
         // NumberRepresentations
 
         open class NumberRepresentation(
-            override val value: Double
-        ) : ValueRepresentation<Double> {
+            val number: Double
+        ) : ValueRepresentation {
+            override val value = number.toString()
             override val type = 4
         }
 
         class PositiveNumberRepresentation(
-            value: Double
-        ) : NumberRepresentation(value) {
+            number: Double
+        ) : NumberRepresentation(number) {
             override val type = 5
         }
 
@@ -29,14 +30,14 @@ sealed interface MinifiedBlockRepresentation {
         }
 
         open class IntRepresentation(
-            override val value: Int
-        ) : ValueRepresentation<Int> {
+            val int: Int
+        ) : NumberRepresentation(int.toDouble()) {
             override val type = 7
         }
 
         class PositiveIntRepresentation(
-            value: Int
-        ) : IntRepresentation(value) {
+            int: Int
+        ) : IntRepresentation(int) {
             override val type = 6
         }
 
@@ -44,14 +45,14 @@ sealed interface MinifiedBlockRepresentation {
 
         class ColorRepresentation(
             val color: String
-        ) : ValueRepresentation<String> {
+        ) : ValueRepresentation {
             override val value = color
             override val type = 9
         }
 
         class StringRepresentation(
             val string: String
-        ) : ValueRepresentation<String> {
+        ) : ValueRepresentation {
             override val value = string
             override val type = 10
         }

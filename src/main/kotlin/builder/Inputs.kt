@@ -69,7 +69,7 @@ class ActualListInput(
 
 class ActualValueInput(
     val value: Value
-) : ActualInput {
+) : ActualShadowInput {
     override val shouldRepresentById = false
     override fun representById(): String? {
         return null
@@ -84,7 +84,26 @@ class ActualValueInput(
         value.number?.let {
             return MinifiedBlockRepresentation.Companion.NumberRepresentation(it)
         }
+        value.positiveInt?.let {
+            return MinifiedBlockRepresentation.Companion.PositiveIntRepresentation(it)
+        }
+        value.positiveNumber?.let {
+            return MinifiedBlockRepresentation.Companion.PositiveNumberRepresentation(it)
+        }
         return MinifiedBlockRepresentation.Companion.IntRepresentation(0)
+    }
+}
+
+
+class ActualAngleInput(
+    val angle: Double
+) : ActualShadowInput {
+    override val shouldRepresentById = false
+    override fun representById(): String? {
+        return null
+    }
+    override fun representByMinifiedBlockRepresentation(): MinifiedBlockRepresentation {
+        return MinifiedBlockRepresentation.Companion.AngleRepresentation(angle)
     }
 }
 
@@ -101,3 +120,24 @@ class ActualIdExpressionInput(
 }
 
 fun ActualInput.independent() = ComposedInput(this, ActualValueInput(Value.ZERO))
+
+fun Input.withValueDefault(string: String? = null, int: Int? = null, number: Double? = null): Input = withValueDefault(Value(string, int, number))
+fun Input.withValueDefault(value: Value): Input = withDefault(ActualValueInput(value))
+
+fun Input.withDefault(obscuredShadow: ActualShadowInput): Input =
+    object : Input {
+        override fun represent(): InputRepresentation {
+            val normal = this@withDefault.represent()
+            if (normal.type != InputRepresentation.Companion.InputType.OBSCURED_SHADOW) return normal
+            val obscuredShadowId = if (obscuredShadow.shouldRepresentById)
+                obscuredShadow.representById()
+            else null
+            val obscuredShadowBlockRepresentation = if (!obscuredShadow.shouldRepresentById)
+                obscuredShadow.representByMinifiedBlockRepresentation()
+            else null
+            return normal.copy(
+                obscuredShadowId = obscuredShadowId,
+                obscuredShadowBlockRepresentation = obscuredShadowBlockRepresentation
+            )
+        }
+    }

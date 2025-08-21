@@ -12,10 +12,12 @@ interface IdExpression : Expression {
     }
 }
 
-class Value(
+data class Value(
     val string: String? = null,
     val int: Int? = null,
-    val number: Double? = null
+    val number: Double? = null,
+    val positiveInt: Int? = null,
+    val positiveNumber: Double? = null
 ) : Expression {
     companion object {
         val ZERO = Value(int = 0)
