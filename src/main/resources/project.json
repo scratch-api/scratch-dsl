@@ -1,0 +1,217 @@
+{
+  "targets":[
+    {
+      "isStage":true,
+      "name":"Stage",
+      "variables":{
+        "`jEk@4|i[#Fk?(8x)AV.-my variable":[
+          "meine Variable",
+          0
+        ]
+      },
+      "lists":{
+
+      },
+      "broadcasts":{
+
+      },
+      "blocks":{
+
+      },
+      "comments":{
+
+      },
+      "currentCostume":0,
+      "costumes":[
+        {
+          "name":"Hintergrund1",
+          "dataFormat":"svg",
+          "assetId":"cd21514d0531fdffb22204e0ec5ed84a",
+          "md5ext":"cd21514d0531fdffb22204e0ec5ed84a.svg",
+          "rotationCenterX":240,
+          "rotationCenterY":180
+        }
+      ],
+      "sounds":[
+
+      ],
+      "volume":100,
+      "layerOrder":0,
+      "tempo":60,
+      "videoTransparency":50,
+      "videoState":"on",
+      "textToSpeechLanguage":null
+    },
+    {
+      "isStage":false,
+      "name":"Figur1",
+      "variables":{
+        "d%]nn/KLUt_lUb$(kd_.":[
+          "mine",
+          0
+        ]
+      },
+      "lists":{
+
+      },
+      "broadcasts":{
+
+      },
+      "blocks":{
+        "c":{
+          "opcode":"event_whenflagclicked",
+          "next":"a",
+          "parent":null,
+          "inputs":{
+
+          },
+          "fields":{
+
+          },
+          "shadow":false,
+          "topLevel":true,
+          "x":92,
+          "y":132
+        },
+        "e":{
+          "opcode":"event_whenkeypressed",
+          "next":null,
+          "parent":null,
+          "inputs":{
+
+          },
+          "fields":{
+            "KEY_OPTION":[
+              "space",
+              null
+            ]
+          },
+          "shadow":false,
+          "topLevel":true,
+          "x":360,
+          "y":133
+        },
+        "b":{
+          "opcode":"control_if",
+          "next":null,
+          "parent":"a",
+          "inputs":{
+            "SUBSTACK":[
+              2,
+              "d"
+            ]
+          },
+          "fields":{
+
+          },
+          "shadow":false,
+          "topLevel":false
+        },
+        "d":{
+          "opcode":"data_setvariableto",
+          "next":null,
+          "parent":"b",
+          "inputs":{
+            "VALUE":[
+              3,
+              [
+                12,
+                "mine",
+                "d%]nn/KLUt_lUb$(kd_."
+              ],
+              [
+                10,
+                "0"
+              ]
+            ]
+          },
+          "fields":{
+            "VARIABLE":[
+              "meine Variable",
+              "`jEk@4|i[#Fk?(8x)AV.-my variable"
+            ]
+          },
+          "shadow":false,
+          "topLevel":false
+        },
+        "a":{
+          "opcode":"data_setvariableto",
+          "next":"b",
+          "parent":"c",
+          "inputs":{
+            "VALUE":[
+              1,
+              [
+                10,
+                "0"
+              ]
+            ]
+          },
+          "fields":{
+            "VARIABLE":[
+              "mine",
+              "d%]nn/KLUt_lUb$(kd_."
+            ]
+          },
+          "shadow":false,
+          "topLevel":false
+        }
+      },
+      "comments":{
+
+      },
+      "currentCostume":0,
+      "costumes":[
+        {
+          "name":"Kostüm1",
+          "bitmapResolution":1,
+          "dataFormat":"svg",
+          "assetId":"927d672925e7b99f7813735c484c6922",
+          "md5ext":"927d672925e7b99f7813735c484c6922.svg",
+          "rotationCenterX":30.74937882782359,
+          "rotationCenterY":58.864768144346826
+        }
+      ],
+      "sounds":[
+
+      ],
+      "volume":100,
+      "layerOrder":1,
+      "visible":true,
+      "x":0,
+      "y":0,
+      "size":100,
+      "direction":90,
+      "draggable":false,
+      "rotationStyle":"all around"
+    }
+  ],
+  "monitors":[
+    {
+      "id":"d%]nn/KLUt_lUb$(kd_.",
+      "mode":"default",
+      "opcode":"data_variable",
+      "params":{
+        "VARIABLE":"mine"
+      },
+      "spriteName":"Figur1",
+      "value":0,
+      "width":0,
+      "height":0,
+      "x":5,
+      "y":5,
+      "visible":false,
+      "sliderMin":0,
+      "sliderMax":100,
+      "isDiscrete":true
+    }
+  ],
+  "extensions":[
+
+  ],
+  "meta":{
+    "semver":"3.0.0",
+    "vm":"0.2.0",
+    "agent":""
+  }
+}
