@@ -21,6 +21,11 @@ data class Value(
 ) : Expression {
     companion object {
         val ZERO = Value(int = 0)
+        fun string(string: String) = Value(string = string)
+        fun int(int: Int) = Value(int = int)
+        fun number(number: Double) = Value(number = number)
+        fun positiveInt(int: Int) = Value(positiveInt = int)
+        fun positiveNumber(number: Double) = Value(positiveNumber = number)
     }
 
     override fun asInput(): Input {

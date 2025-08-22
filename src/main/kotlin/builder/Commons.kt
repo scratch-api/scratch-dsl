@@ -6,7 +6,9 @@ data class Sprite(
     val stacks: List<BlockStack>
 )
 
-interface Blocks {
+interface BlockParent
+
+interface Blocks : BlockParent {
     val blocks: List<Block>
 }
 

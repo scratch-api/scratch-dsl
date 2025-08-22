@@ -94,6 +94,17 @@ class ActualValueInput(
     }
 }
 
+class ActualShadowBlockInput(
+    val shadowBlock: ShadowBlock
+) : ActualShadowInput {
+    override val shouldRepresentById = true
+    override fun representById(): String {
+        return shadowBlock.blockId
+    }
+    override fun representByMinifiedBlockRepresentation(): MinifiedBlockRepresentation? {
+        return null
+    }
+}
 
 class ActualAngleInput(
     val angle: Double

@@ -21,6 +21,8 @@ open class SingleValueField<T : SingleValueFieldValue>(val value: T): Field {
     }
 }
 
+class SingleValueFieldStringValue(val value: String) : SingleValueFieldValue
+
 class VariableField(
     val variable: Variable
 ) : Field {
