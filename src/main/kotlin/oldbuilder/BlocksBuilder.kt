@@ -1,4 +1,6 @@
-package de.thecommcraft.scratchdsl.builder
+package de.thecommcraft.scratchdsl.oldbuilder
+
+import de.thecommcraft.scratchdsl.builder.*
 
 interface BlocksBuilderHost {
     fun register(block: Block)

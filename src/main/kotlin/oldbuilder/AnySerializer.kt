@@ -1,4 +1,4 @@
-package de.thecommcraft.scratchdsl.builder
+package de.thecommcraft.scratchdsl.oldbuilder
 
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.descriptors.SerialDescriptor

@@ -1,4 +1,4 @@
-package de.thecommcraft.scratchdsl.builder
+package de.thecommcraft.scratchdsl.oldbuilder
 
 sealed interface MinifiedBlockRepresentation {
     val type: Int
