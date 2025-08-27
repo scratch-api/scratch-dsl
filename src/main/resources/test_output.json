@@ -1,0 +1,420 @@
+{
+  "extensions": [],
+  "meta": {
+    "agent": "",
+    "semver": "3.0.0",
+    "vm": "0.2.0"
+  },
+  "monitors": [],
+  "targets": [
+    {
+      "blocks": {},
+      "broadcasts": {
+        "]9T.^zn;YCkKSN%F6tas": "Nachricht1"
+      },
+      "comments": {},
+      "costumes": [
+        {
+          "assetId": "cd21514d0531fdffb22204e0ec5ed84a",
+          "dataFormat": "svg",
+          "md5ext": "cd21514d0531fdffb22204e0ec5ed84a.svg",
+          "name": "Hintergrund1",
+          "rotationCenterX": 240,
+          "rotationCenterY": 180
+        }
+      ],
+      "currentCostume": 0,
+      "isStage": true,
+      "layerOrder": 0,
+      "lists": {},
+      "name": "Stage",
+      "sounds": [],
+      "tempo": 60,
+      "textToSpeechLanguage": null,
+      "variables": {
+        "`jEk@4|i[#Fk?(8x)AV.-my variable": [
+          "meine Variable",
+          0
+        ]
+      },
+      "videoState": "on",
+      "videoTransparency": 50,
+      "volume": 100
+    },
+    {
+      "blocks": {
+        "a": {
+          "fields": {},
+          "inputs": {
+            "NUM1": [
+              1,
+              [
+                4,
+                ""
+              ]
+            ],
+            "NUM2": [
+              1,
+              [
+                4,
+                ""
+              ]
+            ]
+          },
+          "next": null,
+          "opcode": "operator_add",
+          "parent": null,
+          "shadow": false,
+          "topLevel": true,
+          "x": 131,
+          "y": 200
+        },
+        "b": {
+          "fields": {},
+          "inputs": {
+            "NUM1": [
+              1,
+              [
+                4,
+                ""
+              ]
+            ],
+            "NUM2": [
+              1,
+              [
+                4,
+                ""
+              ]
+            ]
+          },
+          "next": null,
+          "opcode": "operator_subtract",
+          "parent": null,
+          "shadow": false,
+          "topLevel": true,
+          "x": 56,
+          "y": 249
+        },
+        "c": {
+          "fields": {},
+          "inputs": {
+            "NUM1": [
+              1,
+              [
+                4,
+                ""
+              ]
+            ],
+            "NUM2": [
+              1,
+              [
+                4,
+                ""
+              ]
+            ]
+          },
+          "next": null,
+          "opcode": "operator_multiply",
+          "parent": null,
+          "shadow": false,
+          "topLevel": true,
+          "x": 249,
+          "y": 350
+        },
+        "d": {
+          "fields": {},
+          "inputs": {
+            "NUM1": [
+              1,
+              [
+                4,
+                ""
+              ]
+            ],
+            "NUM2": [
+              1,
+              [
+                4,
+                ""
+              ]
+            ]
+          },
+          "next": null,
+          "opcode": "operator_divide",
+          "parent": null,
+          "shadow": false,
+          "topLevel": true,
+          "x": -21,
+          "y": 355
+        },
+        "e": {
+          "fields": {},
+          "inputs": {
+            "FROM": [
+              1,
+              [
+                4,
+                "1"
+              ]
+            ],
+            "TO": [
+              1,
+              [
+                4,
+                "10"
+              ]
+            ]
+          },
+          "next": null,
+          "opcode": "operator_random",
+          "parent": null,
+          "shadow": false,
+          "topLevel": true,
+          "x": 211,
+          "y": 499
+        },
+        "f": {
+          "fields": {},
+          "inputs": {
+            "OPERAND1": [
+              1,
+              [
+                10,
+                ""
+              ]
+            ],
+            "OPERAND2": [
+              1,
+              [
+                10,
+                "50"
+              ]
+            ]
+          },
+          "next": null,
+          "opcode": "operator_gt",
+          "parent": null,
+          "shadow": false,
+          "topLevel": true,
+          "x": 350,
+          "y": 724
+        },
+        "g": {
+          "fields": {},
+          "inputs": {
+            "OPERAND1": [
+              1,
+              [
+                10,
+                ""
+              ]
+            ],
+            "OPERAND2": [
+              1,
+              [
+                10,
+                "50"
+              ]
+            ]
+          },
+          "next": null,
+          "opcode": "operator_lt",
+          "parent": null,
+          "shadow": false,
+          "topLevel": true,
+          "x": 162,
+          "y": 565
+        },
+        "h": {
+          "fields": {},
+          "inputs": {
+            "OPERAND1": [
+              1,
+              [
+                10,
+                ""
+              ]
+            ],
+            "OPERAND2": [
+              1,
+              [
+                10,
+                "50"
+              ]
+            ]
+          },
+          "next": null,
+          "opcode": "operator_equals",
+          "parent": null,
+          "shadow": false,
+          "topLevel": true,
+          "x": 114,
+          "y": 642
+        },
+        "i": {
+          "fields": {},
+          "inputs": {},
+          "next": null,
+          "opcode": "operator_and",
+          "parent": null,
+          "shadow": false,
+          "topLevel": true,
+          "x": 253,
+          "y": 783
+        },
+        "j": {
+          "fields": {},
+          "inputs": {},
+          "next": null,
+          "opcode": "operator_or",
+          "parent": null,
+          "shadow": false,
+          "topLevel": true,
+          "x": 76,
+          "y": 831
+        },
+        "k": {
+          "fields": {},
+          "inputs": {
+            "STRING1": [
+              1,
+              [
+                10,
+                "Apfel "
+              ]
+            ],
+            "STRING2": [
+              1,
+              [
+                10,
+                "Banane"
+              ]
+            ]
+          },
+          "next": null,
+          "opcode": "operator_join",
+          "parent": null,
+          "shadow": false,
+          "topLevel": true,
+          "x": 208,
+          "y": 912
+        },
+        "l": {
+          "fields": {},
+          "inputs": {
+            "LETTER": [
+              1,
+              [
+                6,
+                "1"
+              ]
+            ],
+            "STRING": [
+              1,
+              [
+                10,
+                "Apfel"
+              ]
+            ]
+          },
+          "next": null,
+          "opcode": "operator_letter_of",
+          "parent": null,
+          "shadow": false,
+          "topLevel": true,
+          "x": 95,
+          "y": 1080
+        },
+        "m": {
+          "fields": {},
+          "inputs": {
+            "STRING1": [
+              1,
+              [
+                10,
+                "Apfel"
+              ]
+            ],
+            "STRING2": [
+              1,
+              [
+                10,
+                "a"
+              ]
+            ]
+          },
+          "next": null,
+          "opcode": "operator_contains",
+          "parent": null,
+          "shadow": false,
+          "topLevel": true,
+          "x": 67,
+          "y": 1192
+        },
+        "n": {
+          "fields": {},
+          "inputs": {
+            "NUM1": [
+              1,
+              [
+                4,
+                ""
+              ]
+            ],
+            "NUM2": [
+              1,
+              [
+                4,
+                ""
+              ]
+            ]
+          },
+          "next": null,
+          "opcode": "operator_mod",
+          "parent": null,
+          "shadow": false,
+          "topLevel": true,
+          "x": 231,
+          "y": 1300
+        }
+      },
+      "broadcasts": {},
+      "comments": {},
+      "costumes": [
+        {
+          "assetId": "927d672925e7b99f7813735c484c6922",
+          "bitmapResolution": 1,
+          "dataFormat": "svg",
+          "md5ext": "927d672925e7b99f7813735c484c6922.svg",
+          "name": "Kost\u00fcm1",
+          "rotationCenterX": 30.74937882782359,
+          "rotationCenterY": 58.864768144346826
+        }
+      ],
+      "currentCostume": 0,
+      "direction": 90,
+      "draggable": false,
+      "isStage": false,
+      "layerOrder": 1,
+      "lists": {},
+      "name": "Figur1",
+      "rotationStyle": "all around",
+      "size": 100,
+      "sounds": [
+        {
+          "assetId": "5cb46ddd903fc2c9976ff881df9273c9",
+          "dataFormat": "wav",
+          "md5ext": "5cb46ddd903fc2c9976ff881df9273c9.wav",
+          "name": "A Elec Bass",
+          "rate": 48000,
+          "sampleCount": 12887
+        }
+      ],
+      "variables": {},
+      "visible": true,
+      "volume": 100,
+      "x": 0,
+      "y": 0
+    }
+  ]
+}
