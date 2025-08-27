@@ -2,10 +2,10 @@ package de.thecommcraft.scratchdsl.build
 
 import kotlinx.serialization.json.*
 
-abstract class NormalBlock(override val opcode: String?) : Block {
+open class NormalBlock(override val opcode: String?) : Block {
     override var next: AnyBlock? = null
     private var myId: String? = null
-    override var parent: AnyBlock? = null
+    override var parent: String? = null
     override var shadow = false
     override var topLevel = false
     val shadowlessExpressionInputs = mutableMapOf<String, Expression?>()
@@ -24,7 +24,7 @@ abstract class NormalBlock(override val opcode: String?) : Block {
         }
         set(value) { myId = value }
 
-    override fun flattenInto(map: MutableMap<String, AnyBlock>) {
+    override fun flattenInto(map: MutableMap<String, AnyBlock>, parentId: String?) {
         map[id] = this
         shadowlessExpressionInputs.forEach { (_, u) ->
             if (u == null) return@forEach
@@ -38,7 +38,7 @@ abstract class NormalBlock(override val opcode: String?) : Block {
         }
         blockStackInputs.forEach { (_, u) ->
             if (u == null) return@forEach
-            u.flattenInto(map)
+            u.flattenInto(map, id)
         }
     }
 
@@ -55,7 +55,12 @@ abstract class NormalBlock(override val opcode: String?) : Block {
             }
             blockStackInputs.forEach { (t, u) ->
                 if (u == null) return@forEach
-                put(t, if (u.isNotEmpty()) JsonPrimitive(u.id) else JsonNull)
+                if (u.isEmpty()) return@forEach
+                u.id = u.contents[0].id
+                put(t, buildJsonArray {
+                    add(2)
+                    add(JsonPrimitive(u.id))
+                })
             }
         }
 
@@ -64,8 +69,8 @@ abstract class NormalBlock(override val opcode: String?) : Block {
             fields.forEach { (t, u) ->
                 if (u == null) return@forEach
                 put(t, buildJsonArray {
-                    u.fieldValue.value
-                    u.fieldValue.id
+                    add(u.fieldValue.value)
+                    add(u.fieldValue.id)
                 })
             }
         }
@@ -76,7 +81,7 @@ abstract class NormalBlock(override val opcode: String?) : Block {
             put("fields", representFields())
             put("topLevel", topLevel)
             put("next", next?.id)
-            put("parent", parent?.id)
+            put("parent", parent)
             put("shadow", shadow)
             put("opcode", opcode)
             if (topLevel) {
@@ -90,7 +95,29 @@ abstract class NormalBlock(override val opcode: String?) : Block {
     }
 }
 
-abstract class NormalBlockBlockHost(opcode: String?, val subStack: BlockStack?) : NormalBlock(opcode), BlockBlockHost {
+fun<B: NormalBlock> B.withField(name: String, field: Field) =
+    this.apply {
+        fields[name] = field
+    }
+
+fun<B: NormalBlock> B.withExpression(
+    name: String,
+    expression: Expression? = null,
+    shadowExpression: ShadowExpression? = null
+) = apply {
+    if (shadowExpression != null && expression !is ShadowExpression) {
+        expressionInputs[name] = shadowExpression to expression
+    } else {
+        if (expression is ValueShadowExpression && shadowExpression is ValueShadowExpression) {
+            shadowlessExpressionInputs[name] = ValueShadowExpression(expression.value, shadowExpression.opcode)
+            return@apply
+        }
+        shadowlessExpressionInputs[name] = expression
+    }
+}
+
+
+open class NormalBlockBlockHost(opcode: String?, val subStack: BlockStack?) : NormalBlock(opcode), BlockBlockHost {
     val blocks = mutableListOf<AnyBlock>()
 
     init {
@@ -99,9 +126,7 @@ abstract class NormalBlockBlockHost(opcode: String?, val subStack: BlockStack?) 
 
     override val stacks = listOfNotNull(subStack)
 
-    override fun addBlock(block: AnyBlock) {
-        stacks[0].addBlock(block)
-    }
+    override fun<B: AnyBlock> addBlock(block: B) = block.apply(stacks[0]::addBlock)
 }
 
 open class ConditionalBlockBlockHost(opcode: String?, val expression: Expression?, subStack: BlockStack?) : NormalBlockBlockHost(opcode, subStack) {
@@ -130,20 +155,23 @@ class IsolatedBlockStackHat(val blockStack: BlockStack) : HatBlock {
     override var next: AnyBlock?
         get() = blockStack.contents.getOrNull(1)
         set(value) { }
-    override var parent: AnyBlock? = null
+    override var parent: String? = null
     override var shadow = false
     override var topLevel = true
     override val stacks = listOf(blockStack)
 
-    override var id: String by actualBlock::id
+    override var id: String
+        get() = actualBlock.id
+        set(value) {
+            actualBlock.id = value
+        }
 
     override fun represent(): Representation = actualBlock.represent()
 
-    override fun flattenInto(map: MutableMap<String, AnyBlock>) =
+    override fun flattenInto(map: MutableMap<String, AnyBlock>, parentId: String?) =
         actualBlock.flattenInto(map)
 
-    override fun addBlock(block: AnyBlock) =
-        blockStack.addBlock(block)
+    override fun<B: AnyBlock> addBlock(block: B) = block.apply(blockStack::addBlock)
 
     override fun loadInto(representation: Representation) {
         TODO("Not yet implemented")
@@ -154,16 +182,74 @@ class IsolatedBlockStackHat(val blockStack: BlockStack) : HatBlock {
     }
 }
 
-fun HatBlockHost.isolated(block: BlockHost.() -> Unit) {
+class HalfIfElse internal constructor(val blockHost: BlockHost, val expression: Expression?, val block: BlockHost.() -> Unit)
+
+// Hats
+
+fun HatBlockHost.isolated(block: BlockHost.() -> Unit): HatBlock {
     val hatBlock = IsolatedBlockStackHat(BlockStack().apply(block))
-    addHatBlock(hatBlock)
+    return addHatBlock(hatBlock)
 }
 
-fun BlockHost.ifBlock(expression: Expression, block: BlockHost.() -> Unit) {
+// Control
+
+fun BlockHost.ifBlock(expression: Expression?, block: BlockHost.() -> Unit): ConditionalBlockBlockHost {
     val stack = BlockStack().apply(block)
-    addBlock(ConditionalBlockBlockHost("control_if", expression, stack))
+    return addBlock(ConditionalBlockBlockHost("control_if", expression, stack))
 }
 
-fun BlockHost.notBlock(expression: Expression?) =
+fun BlockHost.ifElseBlock(expression: Expression?, block: BlockHost.() -> Unit) =
+    HalfIfElse(this, expression, block)
+
+infix fun HalfIfElse.elseBlock(block: BlockHost.() -> Unit): IfElseBlock {
+    val stack = BlockStack().apply(this.block)
+    val secStack = BlockStack().apply(block)
+    return blockHost.addBlock(IfElseBlock(expression, stack, secStack))
+}
+
+fun BlockHost.untilBlock(expression: Expression?, block: BlockHost.() -> Unit): ConditionalBlockBlockHost {
+    val stack = BlockStack().apply(block)
+    return addBlock(ConditionalBlockBlockHost("control_repeat_until", expression, stack))
+}
+
+fun BlockHost.repeatBlock(expression: Expression?, block: BlockHost.() -> Unit): NormalBlockBlockHost {
+    val stack = BlockStack().apply(block)
+    return addBlock(NormalBlockBlockHost("control_repeat", stack)
+        .withExpression("TIMES", expression, ValueInput.POSITIVE_INTEGER.of("10")))
+}
+
+// VLB
+
+fun BlockHost.setVar(variable: VLB, expression: Expression?) =
+    addBlock(NormalBlock("data_setvariableto").apply {
+        expressionInputs["VALUE"] = when (expression) {
+            is ShadowExpression -> expression to null
+            else -> ValueInput
+                .TEXT
+                .of("0") to expression
+        }
+        fields["VARIABLE"] = variable
+    })
+
+
+
+// Operators
+
+fun notBlock(expression: Expression?) =
     NormalUnaryOp("operator_not", expression)
+
+fun round(expression: Expression?) =
+    NormalUnaryOp("operator_round", expression, "NUM", ValueInput.NUMBER.of(""))
+
+infix fun Expression.equals(other: Expression?): Expression {
+    return NormalBinaryOp(
+        "operator_equals",
+        this,
+        other,
+        "OPERAND1",
+        "OPERAND2",
+        ValueInput.TEXT.of(""),
+        ValueInput.TEXT.of("50")
+    )
+}
 
