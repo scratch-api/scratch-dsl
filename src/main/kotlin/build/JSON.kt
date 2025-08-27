@@ -6,6 +6,3 @@ import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.encodeToString
 
 typealias Representation = JsonElement
-
-
-val test = Json.encodeToString(JsonPrimitive(""))

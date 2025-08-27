@@ -1,29 +1,37 @@
 package de.thecommcraft.scratchdsl.build
 
+
+@Suppress("UNCHECKED_CAST")
+fun <T> Any?.unsafeCast(): T = this as T
+
 /**
  * A host of blocks that are BlockHost
  */
 interface BlockBlockHostHost {
-    fun addBlockBlockHost(blockBlockHost: BlockBlockHost<*, *>)
+    fun addBlockBlockHost(blockBlockHost: BlockBlockHost)
 }
 
 interface BlockHost : BlockBlockHostHost {
     fun addBlock(block: AnyBlock)
+    fun getBlocks(): List<Block>
 }
 
-interface Representable {
-    fun represent(): Representation
+interface Representable<R: Representation> {
+    fun represent(): R
 }
 
-interface Derepresentable<D: Derepresentable<D, R>, R: Representation> {
-    fun derepresent(representation: R): D
+interface Loadable<R: Representation> {
+    fun loadInto(representation: R)
 }
 
-typealias AnyBlock = Block<*, *>
+typealias AnyBlock = Block
 
-interface Block<B: Block<B, R>, R: Representation> : Representable, Derepresentable<B, R>
+interface Block : Representable<Representation>, Loadable<Representation> {
+    fun getId(): String
+    fun flattenInto(map: MutableMap<String, AnyBlock>)
+}
 
-interface BlockBlockHost<B: BlockBlockHost<B, R>, R: Representation> : Block<B, R>, BlockHost
+interface BlockBlockHost : Block, BlockHost
 
 data class BuildRoot(val blockStacks: List<BlockHost> = listOf()) {
 
