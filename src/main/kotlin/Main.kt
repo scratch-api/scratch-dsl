@@ -3,14 +3,18 @@ package de.thecommcraft.scratchdsl
 import de.thecommcraft.scratchdsl.build.*
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.add
 
 fun main() {
-    val variable = VLBVariant.VARIABLE.of("meine Variable")
     println(Json.encodeToString(build {
+        val variable = makeVar("myVar", JsonPrimitive(1))
+        val list = makeList("myList") {
+            add("2")
+            add(1)
+        }
         isolated {
-            repeatBlock(5.expr) {
-                setVar(variable, 2.expr)
-            }
+            setVar(variable, 4.expr % 2.expr)
         }
     }.represent()))
 }

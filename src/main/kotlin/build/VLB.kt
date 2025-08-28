@@ -3,15 +3,16 @@ package de.thecommcraft.scratchdsl.build
 import kotlinx.serialization.json.add
 import kotlinx.serialization.json.buildJsonArray
 
-enum class VLBVariant(val numericType: Int) {
+internal enum class VLBVariant(val numericType: Int) {
     VARIABLE(12),
     LIST(13),
     BROADCAST(11);
-    fun of(name: String) = VLB(null, name, this)
 }
 
-open class VLB(opcode: String?, val name: String, val variant: VLBVariant) : Expression(opcode), Field {
+sealed class VLB(opcode: String?, val name: String, private val variant: VLBVariant) : NormalExpression(opcode), Field {
     override val fieldValue get() = Field.Companion.FieldValue(name, id)
+
+    override val independent = false
 
     override fun representAlone(): Representation =
         buildJsonArray {
@@ -20,3 +21,9 @@ open class VLB(opcode: String?, val name: String, val variant: VLBVariant) : Exp
             add(id)
         }
 }
+
+class Variable internal constructor(name: String) : VLB(null, name, VLBVariant.VARIABLE)
+
+class ScratchList internal constructor(name: String) : VLB(null, name, VLBVariant.LIST)
+
+class Broadcast internal constructor(name: String) : VLB(null, name, VLBVariant.BROADCAST), ShadowExpression

@@ -2,19 +2,24 @@ package de.thecommcraft.scratchdsl.build
 
 import kotlinx.serialization.json.*
 
-abstract class Expression(opcode: String?) : NormalBlock(opcode) {
-    open val independent = true
-    open val isShadow = false
+interface Expression : Block {
+    val independent: Boolean
 
-    open fun representAlone(): Representation =
-        JsonPrimitive(id)
+    fun representAlone(): Representation
 
     fun representAsInput(): Representation {
         return buildJsonArray {
-            add(if (isShadow) 1 else 2)
+            add(if (this@Expression is ShadowExpression) 1 else 2)
             add(representAlone())
         }
     }
+}
+
+abstract class NormalExpression(opcode: String?) : NormalBlock(opcode), Expression {
+    override val independent = true
+
+    override fun representAlone(): Representation =
+        JsonPrimitive(id)
 }
 
 class NormalUnaryOp(
@@ -22,7 +27,7 @@ class NormalUnaryOp(
     expression: Expression?,
     expressionInputName: String = "OPERAND",
     shadowExpression: ShadowExpression? = null
-) : Expression(opcode) {
+) : NormalExpression(opcode) {
     init {
         if (shadowExpression != null) {
             expressionInputs[expressionInputName] = shadowExpression to expression
@@ -40,7 +45,7 @@ class NormalBinaryOp(
     expressionBInputName: String = "NUM2",
     shadowExpressionA: ShadowExpression? = null,
     shadowExpressionB: ShadowExpression? = null
-) : Expression(opcode) {
+) : NormalExpression(opcode) {
     init {
         if (shadowExpressionA != null && expressionA !is ShadowExpression) {
             expressionInputs[expressionAInputName] = shadowExpressionA to expressionA
@@ -57,9 +62,7 @@ class NormalBinaryOp(
     }
 }
 
-abstract class ShadowExpression(opcode: String? = null) : Expression(opcode) {
-    override val isShadow = true
-    abstract override fun representAlone(): Representation
+interface ShadowExpression : Expression {
     fun representAsInputWith(other: Expression?): Representation {
         if (other == null) return representAsInput()
         return buildJsonArray {
@@ -68,6 +71,10 @@ abstract class ShadowExpression(opcode: String? = null) : Expression(opcode) {
             add(representAlone())
         }
     }
+}
+
+abstract class NormalShadowExpression(opcode: String? = null) : NormalExpression(opcode), ShadowExpression {
+    abstract override fun representAlone(): Representation
 }
 
 enum class MathOps(val code: String) {
@@ -108,7 +115,7 @@ enum class ValueInput(val opcode: String, val numericType: Int) {
         else ValueShadowExpression(value.toString(), opcode)
 }
 
-data class ValueShadowExpression(val value: String, override val opcode: String? = null) : ShadowExpression(opcode) {
+data class ValueShadowExpression(val value: String, override val opcode: String? = null) : NormalShadowExpression(opcode) {
 
     override val independent: Boolean = false
     val numericType = if (opcode != null) {

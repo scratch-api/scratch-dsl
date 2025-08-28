@@ -1,7 +1,6 @@
 package de.thecommcraft.scratchdsl.build
 
-import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.*
 import kotlin.random.Random
 
 interface HasId {
@@ -77,7 +76,17 @@ interface HatBlock : BlockBlockHost {
     }
 }
 
-class BuildRoot(val hatBlocks: MutableList<HatBlock> = mutableListOf()) : HatBlockHost, Representable<Representation> {
+class BuildRoot {
+    val globalVariables = mutableMapOf<String, VLB>()
+    val globalLists = mutableMapOf<String, VLB>()
+    val globalBroadcasts = mutableMapOf<String, Broadcast>()
+}
+
+class SpriteBuilder(val root: BuildRoot) : HatBlockHost, Representable<Representation> {
+    val hatBlocks = mutableListOf<HatBlock>()
+    val variables = mutableMapOf<String, Triple<Variable, JsonPrimitive, Boolean>>()
+    val lists = mutableMapOf<String, Pair<ScratchList, JsonArray>>()
+    val broadcasts = mutableMapOf<String, Broadcast>()
     override fun<B: HatBlock> addHatBlock(hatBlock: B) = hatBlock.apply(hatBlocks::add)
 
     override fun represent(): Representation {
@@ -89,6 +98,28 @@ class BuildRoot(val hatBlocks: MutableList<HatBlock> = mutableListOf()) : HatBlo
             }
         }
         return buildJsonObject {
+            put("broadcasts", buildJsonObject {
+                broadcasts.forEach { (t, u) ->
+                    put(u.id, u.name)
+                }
+            })
+            put("variables", buildJsonObject {
+                variables.forEach { (t, u) ->
+                    put(u.first.id, buildJsonArray {
+                        add(u.first.name)
+                        add(u.second)
+                        if (u.third) add(true)
+                    })
+                }
+            })
+            put("lists", buildJsonObject {
+                lists.forEach { (t, u) ->
+                    put(u.first.id, buildJsonArray {
+                        add(u.first.name)
+                        add(u.second)
+                    })
+                }
+            })
             put("blocks", JsonObject(blocks.mapValues { (t, u) -> u.represent() }))
         }
     }
@@ -98,6 +129,27 @@ class BuildRoot(val hatBlocks: MutableList<HatBlock> = mutableListOf()) : HatBlo
     val Double.expr get() = ValueInput.TEXT.of(this.toString())
     val Int.expr get() = ValueInput.TEXT.of(this.toString())
     val String.expr get() = ValueInput.TEXT.of(this)
+
+    fun makeVar(name: String, value: JsonPrimitive = JsonPrimitive(""), cloud: Boolean = false) = Variable(name).apply {
+        if (name in variables || name in root.globalVariables) {
+            throw IllegalArgumentException("This name is already used.")
+        }
+        variables[name] = Triple(this, value, cloud)
+    }
+
+    fun makeList(name: String, block: JsonArrayBuilder.() -> Unit) = ScratchList(name).apply {
+        if (name in lists || name in root.globalLists) {
+            throw IllegalArgumentException("This name is already used.")
+        }
+        lists[name] = this to buildJsonArray(block)
+    }
+
+    fun makeLocalBroadcast(name: String) = Broadcast(name).apply {
+        if (name in broadcasts || name in root.globalBroadcasts) {
+            throw IllegalArgumentException("This name is already used.")
+        }
+        broadcasts[name] = this
+    }
 }
 
 const val ALLOWED_CHARS = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
@@ -123,6 +175,6 @@ fun makeId(): String {
     }.joinToString("")
 }
 
-fun build(block: BuildRoot.() -> Unit): BuildRoot {
-    return BuildRoot().apply(block)
+fun build(block: SpriteBuilder.() -> Unit): SpriteBuilder {
+    return SpriteBuilder(BuildRoot()).apply(block)
 }
