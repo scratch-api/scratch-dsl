@@ -9,7 +9,23 @@
     "semver": "3.0.0",
     "vm": "0.2.0"
   },
-  "monitors": [],
+  "monitors": [
+    {
+      "height": 0,
+      "id": "Lf^(EJ-p)-B/XPKS]6Ni",
+      "mode": "list",
+      "opcode": "data_listcontents",
+      "params": {
+        "LIST": "list"
+      },
+      "spriteName": null,
+      "value": [],
+      "visible": true,
+      "width": 0,
+      "x": 5,
+      "y": 5
+    }
+  ],
   "targets": [
     {
       "blocks": {
@@ -52,7 +68,12 @@
       "currentCostume": 0,
       "isStage": true,
       "layerOrder": 0,
-      "lists": {},
+      "lists": {
+        "Lf^(EJ-p)-B/XPKS]6Ni": [
+          "list",
+          []
+        ]
+      },
       "name": "Stage",
       "sounds": [],
       "tempo": 60,
@@ -65,27 +86,129 @@
     {
       "blocks": {
         "b": {
-          "fields": {},
+          "fields": {
+            "LIST": [
+              "list",
+              "Lf^(EJ-p)-B/XPKS]6Ni"
+            ]
+          },
           "inputs": {
-            "BROADCAST_INPUT": [
+            "INDEX": [
               1,
               [
-                11,
-                "aw",
-                "$!)fJok]8gl-lR#7Md#5"
+                7,
+                "1"
               ]
             ]
           },
           "next": null,
-          "opcode": "event_broadcast",
+          "opcode": "data_itemoflist",
           "parent": null,
           "shadow": false,
           "topLevel": true,
-          "x": -127,
-          "y": -134
+          "x": 181,
+          "y": -200
+        },
+        "c": {
+          "fields": {
+            "LIST": [
+              "list",
+              "Lf^(EJ-p)-B/XPKS]6Ni"
+            ]
+          },
+          "inputs": {
+            "ITEM": [
+              1,
+              [
+                10,
+                "thing"
+              ]
+            ]
+          },
+          "next": null,
+          "opcode": "data_itemnumoflist",
+          "parent": null,
+          "shadow": false,
+          "topLevel": true,
+          "x": 93,
+          "y": -70
+        },
+        "d": {
+          "fields": {
+            "LIST": [
+              "list",
+              "Lf^(EJ-p)-B/XPKS]6Ni"
+            ]
+          },
+          "inputs": {},
+          "next": null,
+          "opcode": "data_lengthoflist",
+          "parent": null,
+          "shadow": false,
+          "topLevel": true,
+          "x": 15,
+          "y": 0
+        },
+        "e": {
+          "fields": {
+            "LIST": [
+              "list",
+              "Lf^(EJ-p)-B/XPKS]6Ni"
+            ]
+          },
+          "inputs": {
+            "ITEM": [
+              1,
+              [
+                10,
+                "thing"
+              ]
+            ]
+          },
+          "next": null,
+          "opcode": "data_listcontainsitem",
+          "parent": null,
+          "shadow": false,
+          "topLevel": true,
+          "x": 19,
+          "y": 76
+        },
+        "f": {
+          "fields": {
+            "LIST": [
+              "list",
+              "Lf^(EJ-p)-B/XPKS]6Ni"
+            ]
+          },
+          "inputs": {},
+          "next": null,
+          "opcode": "data_showlist",
+          "parent": null,
+          "shadow": false,
+          "topLevel": true,
+          "x": -34,
+          "y": 150
+        },
+        "g": {
+          "fields": {
+            "LIST": [
+              "list",
+              "Lf^(EJ-p)-B/XPKS]6Ni"
+            ]
+          },
+          "inputs": {},
+          "next": null,
+          "opcode": "data_hidelist",
+          "parent": null,
+          "shadow": false,
+          "topLevel": true,
+          "x": 25,
+          "y": 261
         }
       },
-      "broadcasts": {},
+      "broadcasts": {
+        "awdawdad": "test"
+      },
       "comments": {},
       "costumes": [
         {

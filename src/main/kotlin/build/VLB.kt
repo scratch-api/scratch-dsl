@@ -22,7 +22,13 @@ sealed class VLB(opcode: String?, val name: String, private val variant: VLBVari
         }
 }
 
-class Variable internal constructor(name: String) : VLB(null, name, VLBVariant.VARIABLE)
+class Variable internal constructor(name: String) : VLB(null, name, VLBVariant.VARIABLE), HandlesSet {
+    override var expressionSetHandler: ((Expression?) -> Block)? = { expression ->
+        NormalBlock("data_setvariableto")
+            .withExpression("VALUE", expression, ValueInput.TEXT.of("0"))
+            .withField("VARIABLE", this)
+    }
+}
 
 class ScratchList internal constructor(name: String) : VLB(null, name, VLBVariant.LIST)
 

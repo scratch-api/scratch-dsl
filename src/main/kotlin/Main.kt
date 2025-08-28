@@ -8,13 +8,13 @@ import kotlinx.serialization.json.add
 
 fun main() {
     println(Json.encodeToString(build {
-        val variable = makeVar("myVar", JsonPrimitive(1))
-        val list = makeList("myList") {
+        val outVal = makeVar("outVal")
+        val myList = makeList("myList") {
             add("2")
             add(1)
         }
         isolated {
-            setVar(variable, 4.expr % 2.expr)
+            myList[2.expr] set 3.expr
         }
     }.represent()))
 }

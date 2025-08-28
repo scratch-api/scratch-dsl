@@ -18,6 +18,14 @@ interface HatBlockHost {
 interface BlockHost {
     fun<B: AnyBlock> addBlock(block: B): B
     val stacks: List<BlockStack>
+
+    operator fun ScratchList.set(index: Expression?, value: Expression?) =
+        replaceAtIndex(this, value, index)
+
+    infix fun HandlesSet.set(value: Expression?) =
+        this.expressionSetHandler?.let {
+            addBlock(it(value))
+        }
 }
 
 interface Representable<R: Representation> {
@@ -87,6 +95,10 @@ class SpriteBuilder(val root: BuildRoot) : HatBlockHost, Representable<Represent
     val variables = mutableMapOf<String, Triple<Variable, JsonPrimitive, Boolean>>()
     val lists = mutableMapOf<String, Pair<ScratchList, JsonArray>>()
     val broadcasts = mutableMapOf<String, Broadcast>()
+    val costumes = mutableMapOf<String, Costume>()
+    val sounds = mutableMapOf<String, Sound>()
+    val comments = mutableListOf<Comment>()
+    var name = "Sprite-${makeId().substring(0..<8)}"
     override fun<B: HatBlock> addHatBlock(hatBlock: B) = hatBlock.apply(hatBlocks::add)
 
     override fun represent(): Representation {
@@ -120,6 +132,33 @@ class SpriteBuilder(val root: BuildRoot) : HatBlockHost, Representable<Represent
                     })
                 }
             })
+//            "currentCostume": 0,
+//            "isStage": true,
+//            "layerOrder": 0,
+//            "tempo": 60,
+//            "textToSpeechLanguage": null,
+//            "videoState": "on",
+//            "videoTransparency": 50,
+//            "volume": 100
+            put("comments", buildJsonObject {
+                comments.forEach { c ->
+
+                }
+            })
+            put("costumes", buildJsonArray {
+                costumes.forEach { (t, u) ->
+                    add(buildJsonObject {
+                        put("assetId", u.assetId)
+                        put("dataFormat", u.dataFormat)
+                        put("md5ext", "${u.assetId}.${u.dataFormat}")
+                        put("name", t)
+                        put("rotationCenterX", u.rotationCenter.first)
+                        put("rotationCenterY", u.rotationCenter.second)
+                    })
+                }
+            })
+            put("sounds", buildJsonArray {  })
+            put("name", name)
             put("blocks", JsonObject(blocks.mapValues { (t, u) -> u.represent() }))
         }
     }
@@ -169,6 +208,10 @@ fun makeId(): String {
         currentIdIdx += 1
         return name
     }
+    return makeRandomId()
+}
+
+fun makeRandomId(): String {
     val rawBinary = Random.nextBytes(16)
     return rawBinary.map { it ->
         ALLOWED_CHARS[it.toInt().mod(ALLOWED_CHARS.length)]

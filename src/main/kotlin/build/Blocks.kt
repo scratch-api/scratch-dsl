@@ -1,6 +1,7 @@
 package de.thecommcraft.scratchdsl.build
 
 import kotlinx.serialization.json.*
+import kotlin.reflect.jvm.internal.ReflectProperties.Val
 
 open class NormalBlock(override val opcode: String?) : Block {
     override var next: AnyBlock? = null
@@ -104,6 +105,10 @@ open class NormalBlock(override val opcode: String?) : Block {
     }
 }
 
+interface HandlesSet : Expression {
+    var expressionSetHandler: ((Expression?) -> Block)?
+}
+
 fun<B: NormalBlock> B.withField(name: String, field: Field) =
     this.apply {
         fields[name] = field
@@ -135,6 +140,10 @@ fun<B: NormalBlock> B.withMutation(
 fun<B: NormalBlock> B.withDefaultMutation() =
     withMutation("tagName", JsonPrimitive("mutation"))
         .withMutation("children", JsonArray(listOf()))
+
+fun<B: HandlesSet> B.withHandlesSet(block: (Expression?) -> Block) = this.apply {
+    expressionSetHandler = block
+}
 
 open class NormalBlockBlockHost(opcode: String?, val subStack: BlockStack?) : NormalBlock(opcode), BlockBlockHost {
     val blocks = mutableListOf<AnyBlock>()
@@ -309,6 +318,28 @@ fun BlockHost.replaceAtIndex(list: ScratchList, value: Expression?, index: Expre
         .withExpression("INDEX", index, ValueInput.INTEGER.of("1"))
         .withExpression("ITEM", value, ValueInput.TEXT.of("thing"))
         .withField("LIST", list))
+
+operator fun ScratchList.get(index: Expression?) =
+    HandlesSetNormalUnaryOp("data_itemoflist", index, "INDEX", ValueInput.INTEGER.of("1"))
+        .withField("LIST", this)
+        .withHandlesSet { expression ->
+            NormalBlock("data_replaceitemoflist")
+                .withExpression("INDEX", index, ValueInput.INTEGER.of("1"))
+                .withExpression("ITEM", expression, ValueInput.TEXT.of("thing"))
+                .withField("LIST", this)
+        }
+
+fun ScratchList.indexOf(value: Expression?) =
+    NormalUnaryOp("data_itemnumoflist", value, "ITEM", ValueInput.TEXT.of("thing"))
+        .withField("LIST", this)
+
+val ScratchList.length: Expression get() =
+    NormalExpression("data_lengthoflist")
+        .withField("LIST", this)
+
+infix fun ScratchList.containsItem(value: Expression?) =
+    NormalUnaryOp("data_listcontainsitem", value, "ITEM", ValueInput.TEXT.of("thing"))
+        .withField("LIST", this)
 
 // Operators
 

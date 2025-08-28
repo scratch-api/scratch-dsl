@@ -15,14 +15,18 @@ interface Expression : Block {
     }
 }
 
-abstract class NormalExpression(opcode: String?) : NormalBlock(opcode), Expression {
+open class NormalExpression(opcode: String?) : NormalBlock(opcode), Expression {
     override val independent = true
 
     override fun representAlone(): Representation =
         JsonPrimitive(id)
 }
 
-class NormalUnaryOp(
+class HandlesSetNormalExpression(opcode: String?) : NormalExpression(opcode), HandlesSet {
+    override var expressionSetHandler: ((Expression?) -> Block)? = null
+}
+
+open class NormalUnaryOp(
     opcode: String?,
     expression: Expression?,
     expressionInputName: String = "OPERAND",
@@ -37,7 +41,16 @@ class NormalUnaryOp(
     }
 }
 
-class NormalBinaryOp(
+class HandlesSetNormalUnaryOp(
+    opcode: String?,
+    expression: Expression?,
+    expressionInputName: String = "OPERAND",
+    shadowExpression: ShadowExpression? = null
+) : NormalUnaryOp(opcode, expression, expressionInputName, shadowExpression), HandlesSet {
+    override var expressionSetHandler: ((Expression?) -> Block)? = null
+}
+
+open class NormalBinaryOp(
     opcode: String?,
     expressionA: Expression?,
     expressionB: Expression?,
@@ -60,6 +73,18 @@ class NormalBinaryOp(
             shadowlessExpressionInputs[expressionBInputName] = expressionB
         }
     }
+}
+
+class HandlesSetNormalBinaryOp(
+    opcode: String?,
+    expressionA: Expression?,
+    expressionB: Expression?,
+    expressionAInputName: String = "NUM1",
+    expressionBInputName: String = "NUM2",
+    shadowExpressionA: ShadowExpression? = null,
+    shadowExpressionB: ShadowExpression? = null
+) : NormalBinaryOp(opcode, expressionA, expressionB, expressionAInputName, expressionBInputName, shadowExpressionA, shadowExpressionB), HandlesSet {
+    override var expressionSetHandler: ((Expression?) -> Block)? = null
 }
 
 interface ShadowExpression : Expression {
