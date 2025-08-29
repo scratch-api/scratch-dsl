@@ -3,18 +3,28 @@ package de.thecommcraft.scratchdsl
 import de.thecommcraft.scratchdsl.build.*
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.add
 
 fun main() {
     println(Json.encodeToString(build {
-        val outVal = makeVar("outVal")
-        val myList = makeList("myList") {
-            add("2")
-            add(1)
+        val sumVar = makeVar("sum")
+        val indexVar = makeVar("index")
+        val numbers = makeList("numbers") { }
+        isolated {
+            numbers.deleteAll()
+            indexVar set 0.expr
+            whileBlock (indexVar lessThan 10.expr) {
+                indexVar set indexVar + 1.expr
+                numbers append indexVar
+            }
         }
         isolated {
-            myList[2.expr] set 3.expr
+            sumVar set 0.expr
+            indexVar set 0.expr
+            whileBlock (indexVar lessThan numbers.length) {
+                indexVar set indexVar + 1.expr
+                sumVar set sumVar + numbers[indexVar]
+            }
         }
     }.represent()))
 }

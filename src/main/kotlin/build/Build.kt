@@ -26,6 +26,18 @@ interface BlockHost {
         this.expressionSetHandler?.let {
             addBlock(it(value))
         }
+
+    infix fun ScratchList.append(value: Expression?) =
+        this@BlockHost.append(this, value)
+
+    fun ScratchList.deleteAll() =
+        this@BlockHost.deleteAll(this)
+
+    fun ScratchList.deleteAtIndex(value: Expression?) =
+        this@BlockHost.deleteAtIndex(this, value)
+
+    fun ScratchList.insertAtIndex(value: Expression?, index: Expression?) =
+        this@BlockHost.insertAtIndex(this, value, index)
 }
 
 interface Representable<R: Representation> {
@@ -99,6 +111,14 @@ class SpriteBuilder(val root: BuildRoot) : HatBlockHost, Representable<Represent
     val sounds = mutableMapOf<String, Sound>()
     val comments = mutableListOf<Comment>()
     var name = "Sprite-${makeId().substring(0..<8)}"
+    var startCostume = 0
+    var isStage = false
+    var startLayer = 0
+    var startAudioTempo = 60
+    var startTextToSpeechLanguage: String? = null
+    var startVideoState = "on"
+    var startVideoTranparency = 50
+    var startVolume = 100
     override fun<B: HatBlock> addHatBlock(hatBlock: B) = hatBlock.apply(hatBlocks::add)
 
     override fun represent(): Representation {
@@ -132,33 +152,30 @@ class SpriteBuilder(val root: BuildRoot) : HatBlockHost, Representable<Represent
                     })
                 }
             })
-//            "currentCostume": 0,
-//            "isStage": true,
-//            "layerOrder": 0,
-//            "tempo": 60,
-//            "textToSpeechLanguage": null,
-//            "videoState": "on",
-//            "videoTransparency": 50,
-//            "volume": 100
             put("comments", buildJsonObject {
                 comments.forEach { c ->
-
+                    put(c.id, c.represent())
                 }
             })
             put("costumes", buildJsonArray {
                 costumes.forEach { (t, u) ->
-                    add(buildJsonObject {
-                        put("assetId", u.assetId)
-                        put("dataFormat", u.dataFormat)
-                        put("md5ext", "${u.assetId}.${u.dataFormat}")
-                        put("name", t)
-                        put("rotationCenterX", u.rotationCenter.first)
-                        put("rotationCenterY", u.rotationCenter.second)
-                    })
+                    add(u.represent())
                 }
             })
-            put("sounds", buildJsonArray {  })
+            put("sounds", buildJsonArray {
+                sounds.forEach { (t, u) ->
+                    add(u.represent())
+                }
+            })
             put("name", name)
+            put("currentCostume", startCostume)
+            put("isStage", isStage)
+            put("layerOrder", startLayer)
+            put("tempo", startAudioTempo)
+            put("textToSpeechLanguage", startTextToSpeechLanguage)
+            put("videoState", startVideoState)
+            put("videoTransparency", startVideoTranparency)
+            put("volume", startVolume)
             put("blocks", JsonObject(blocks.mapValues { (t, u) -> u.represent() }))
         }
     }
