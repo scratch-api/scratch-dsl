@@ -5,26 +5,20 @@ import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.add
 
+// "assetId": "cd21514d0531fdffb22204e0ec5ed84a",
+//          "bitmapResolution": 1,
+//          "dataFormat": "svg",
+//          "md5ext": "cd21514d0531fdffb22204e0ec5ed84a.svg",
+//          "name": "costume1",
+//          "rotationCenterX": 0,
+//          "rotationCenterY": 0
+
 fun main() {
     println(Json.encodeToString(build {
-        val sumVar = makeVar("sum")
-        val indexVar = makeVar("index")
-        val numbers = makeList("numbers") { }
-        isolated {
-            numbers.deleteAll()
-            indexVar set 0.expr
-            whileBlock (indexVar lessThan 10.expr) {
-                indexVar set indexVar + 1.expr
-                numbers append indexVar
-            }
-        }
-        isolated {
-            sumVar set 0.expr
-            indexVar set 0.expr
-            whileBlock (indexVar lessThan numbers.length) {
-                indexVar set indexVar + 1.expr
-                sumVar set sumVar + numbers[indexVar]
-            }
+        val costumeA = addCostume("costume1", "svg", "cd21514d0531fdffb22204e0ec5ed84a")
+        val variable = makeVar()
+        whenGreenFlagClicked {
+            gotoLocation(this@build.asSpecialLocation)
         }
     }.represent()))
 }

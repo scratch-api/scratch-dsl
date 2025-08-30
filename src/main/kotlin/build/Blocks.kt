@@ -1,9 +1,10 @@
+@file:Suppress("unused")
+
 package de.thecommcraft.scratchdsl.build
 
 import kotlinx.serialization.json.*
-import kotlin.reflect.jvm.internal.ReflectProperties.Val
 
-open class NormalBlock(override val opcode: String?) : Block {
+open class NormalBlock internal constructor(override val opcode: String?) : Block {
     override var next: AnyBlock? = null
     private var myId: String? = null
     override var parent: String? = null
@@ -20,7 +21,7 @@ open class NormalBlock(override val opcode: String?) : Block {
             myId?.let {
                 return it
             }
-            val newId = makeId()
+            val newId = IdGenerator.makeId()
             myId = newId
             return newId
         }
@@ -100,6 +101,28 @@ open class NormalBlock(override val opcode: String?) : Block {
             }
         }
 
+    override fun prepareRepresent(sprite: Sprite) {
+        shadowlessExpressionInputs.forEach { (t, u) ->
+            if (u == null) return@forEach
+            u.prepareRepresent(sprite)
+            val newU = if (u is NonShadowShouldCopy) u.makeCopy() else u
+            shadowlessExpressionInputs[t] = newU
+        }
+        expressionInputs.forEach { (t, u) ->
+            if (u == null) return@forEach
+            val (s, e) = u
+            s.prepareRepresent(sprite)
+            e?.prepareRepresent(sprite)
+            val newS = if (s is ShadowShouldCopy) s.makeCopy() else s
+            val newE = if (e is NonShadowShouldCopy) e.makeCopy() else e
+            expressionInputs[t] = newS to newE
+        }
+        blockStackInputs.forEach { (_, u) ->
+            if (u == null) return@forEach
+            u.prepareRepresent(sprite)
+        }
+    }
+
     override fun loadInto(representation: Representation) {
         TODO("Not implemented yet")
     }
@@ -107,6 +130,7 @@ open class NormalBlock(override val opcode: String?) : Block {
 
 interface HandlesSet : Expression {
     var expressionSetHandler: ((Expression?) -> Block)?
+    var expressionChangeHandler: ((Expression?) -> Block)?
 }
 
 fun<B: NormalBlock> B.withField(name: String, field: Field) =
@@ -145,7 +169,18 @@ fun<B: HandlesSet> B.withHandlesSet(block: (Expression?) -> Block) = this.apply 
     expressionSetHandler = block
 }
 
-open class NormalBlockBlockHost(opcode: String?, val subStack: BlockStack?) : NormalBlock(opcode), BlockBlockHost {
+fun<B: HandlesSet> B.withHandlesChange(block: (Expression?) -> Block) = this.apply {
+    expressionChangeHandler = block
+}
+
+fun Expression.changeShadowOpcode(opcode: String?): Expression {
+    if (this is OpcodeSettableShadowExpression) {
+        this.opcode = opcode
+    }
+    return this
+}
+
+open class NormalBlockBlockHost internal constructor(opcode: String?, val subStack: BlockStack?) : NormalBlock(opcode), BlockBlockHost {
     val blocks = mutableListOf<AnyBlock>()
 
     init {
@@ -157,14 +192,14 @@ open class NormalBlockBlockHost(opcode: String?, val subStack: BlockStack?) : No
     override fun<B: AnyBlock> addBlock(block: B) = block.apply(stacks[0]::addBlock)
 }
 
-open class ConditionalBlockBlockHost(opcode: String?, val expression: Expression?, subStack: BlockStack?) : NormalBlockBlockHost(opcode, subStack) {
+open class ConditionalBlockBlockHost internal constructor(opcode: String?, val expression: Expression?, subStack: BlockStack?) : NormalBlockBlockHost(opcode, subStack) {
 
     init {
         shadowlessExpressionInputs["CONDITION"] = expression
     }
 }
 
-class IfElseBlock(
+class IfElseBlock internal constructor(
     expression: Expression?,
     subStack: BlockStack?,
     secondarySubStack: BlockStack
@@ -174,7 +209,23 @@ class IfElseBlock(
     }
 }
 
-class IsolatedBlockStackHat(val blockStack: BlockStack) : HatBlock {
+class NormalHatBlock internal constructor(opcode: String?) : NormalBlock(opcode), HatBlock {
+    val blockStack = BlockStack()
+    override var topLevel: Boolean = true
+    override val stacks = listOf(blockStack)
+    init {
+        addBlock(this)
+    }
+    override fun <B : AnyBlock> addBlock(block: B) =
+        blockStack.addBlock(block)
+
+    override fun prepareRepresent(sprite: Sprite) {
+        super.prepareRepresent(sprite)
+        blockStack.prepareRepresent(sprite)
+    }
+}
+
+class IsolatedBlockStackHat internal constructor(val blockStack: BlockStack) : HatBlock {
     private val actualBlock: AnyBlock get() {
         if (blockStack.contents.size == 0) throw IllegalStateException("You need to add blocks to the BlockStack before doing that.")
         return blockStack.contents[0]
@@ -182,7 +233,7 @@ class IsolatedBlockStackHat(val blockStack: BlockStack) : HatBlock {
     override val opcode get() = actualBlock.opcode
     override var next: AnyBlock?
         get() = blockStack.contents.getOrNull(1)
-        set(value) { }
+        set(_) { }
     override var parent: String? = null
     override var shadow = false
     override var topLevel = true
@@ -205,12 +256,55 @@ class IsolatedBlockStackHat(val blockStack: BlockStack) : HatBlock {
         TODO("Not yet implemented")
     }
 
-    override fun prepareRepresent() {
+    override fun prepareRepresent(sprite: Sprite) {
         actualBlock.topLevel = true
+        blockStack.prepareRepresent(sprite)
     }
 }
 
 class HalfIfElse internal constructor(val blockHost: BlockHost, val expression: Expression?, val block: BlockHost.() -> Unit)
+
+sealed interface AnyKeyboardKey {
+    val key: String
+}
+
+class ChosenKeyboardKey(override val key: String) : AnyKeyboardKey
+
+enum class KeyboardKey(override val key: String) : AnyKeyboardKey {
+    A("a"), B("b"), C("c"),
+    D("d"), E("e"), F("f"),
+    G("g"), H("h"), I("i"),
+    J("j"), K("k"), L("l"),
+    M("m"), N("n"), O("o"),
+    P("p"), Q("q"), R("r"),
+    S("s"), T("t"), U("u"),
+    V("v"), W("w"), X("x"),
+    Y("y"), Z("z"), ZERO("0"),
+    ONE("1"), TWO("2"), THREE("3"),
+    FOUR("4"), FIVE("5"), SIX("6"),
+    SEVEN("7"), EIGHT("8"), NINE("9"),
+    SPACE("space"),
+    LEFT_ARROW("left arrow"),
+    RIGHT_ARROW("right arrow"),
+    UP_ARROW("up arrow"),
+    DOWN_ARROW("down arrow"),
+    ENTER("enter"),
+    ANY("any")
+}
+
+enum class RotationStyle(val value: String) {
+    LEFT_RIGHT("left-right"),
+    DONT_ROTATE("don't rotate"),
+    ALL_AROUND("all around")
+}
+
+operator fun Expression.not(): Expression = notBlock(this)
+
+val Double.expr get() = ValueInput.TEXT.of(this.toString())
+val Int.expr get() = ValueInput.TEXT.of(this.toString())
+val String.expr get() = ValueInput.TEXT.of(this)
+
+class ManuallyMadeBlock(opcode: String?) : NormalBlock(opcode)
 
 // Hats
 
@@ -218,6 +312,158 @@ fun HatBlockHost.isolated(block: BlockHost.() -> Unit): HatBlock {
     val hatBlock = IsolatedBlockStackHat(BlockStack().apply(block))
     return addHatBlock(hatBlock)
 }
+
+fun HatBlockHost.whenGreenFlagClicked(block: BlockHost.() -> Unit): HatBlock {
+    val hatBlock = NormalHatBlock("event_whenflagclicked")
+    hatBlock.blockStack.block()
+    return addHatBlock(hatBlock)
+}
+
+fun HatBlockHost.whenKeyPressed(key: AnyKeyboardKey, block: BlockHost.() -> Unit): NormalHatBlock {
+    val hatBlock = NormalHatBlock("event_whenkeypressed")
+        .withField("KEY_OPTION", Field.of(key.key))
+    hatBlock.blockStack.block()
+    return addHatBlock(hatBlock)
+}
+
+fun HatBlockHost.whenClicked(block: BlockHost.() -> Unit): NormalHatBlock {
+    val hatBlock = NormalHatBlock("event_whenthisspriteclicked")
+    hatBlock.blockStack.block()
+    return addHatBlock(hatBlock)
+}
+
+fun HatBlockHost.whenBackdropSwitchesTo(backdrop: Costume, block: BlockHost.() -> Unit): NormalHatBlock {
+    val hatBlock = NormalHatBlock("event_whenbackdropswitchesto")
+        .withField("BACKDROP", backdrop)
+    hatBlock.blockStack.block()
+    return addHatBlock(hatBlock)
+}
+
+// Motion
+
+fun BlockHost.moveSteps(steps: Expression?) =
+    addBlock(NormalBlock("motion_movesteps")
+        .withExpression("STEPS", steps, ValueInput.NUMBER.of("10"))
+    )
+
+fun BlockHost.turnRight(degrees: Expression?) =
+    addBlock(NormalBlock("motion_turnright")
+        .withExpression("DEGREES", degrees, ValueInput.NUMBER.of("15")))
+
+fun BlockHost.turnLeft(degrees: Expression?) =
+    addBlock(NormalBlock("motion_turnleft")
+        .withExpression("DEGREES", degrees, ValueInput.NUMBER.of("15")))
+
+
+fun BlockHost.gotoLocation(to: Expression?) =
+    addBlock(NormalBlock("motion_goto")
+        .withExpression("TO", to?.changeShadowOpcode("motion_goto_menu"), randomLocation))
+
+fun BlockHost.gotoXY(x: Expression?, y: Expression?) =
+    addBlock(NormalBlock("motion_gotoxy")
+        .withExpression("X", x, ValueInput.NUMBER.of("0"))
+        .withExpression("Y", y, ValueInput.NUMBER.of("0")))
+
+fun BlockHost.glideToLocation(to: Expression?, secs: Expression?) =
+    addBlock(NormalBlock("motion_glideto")
+        .withExpression("SECS", secs, ValueInput.NUMBER.of("1"))
+        .withExpression("TO", to?.changeShadowOpcode("motion_glideto_menu"), null))
+
+fun BlockHost.glideToXY(x: Expression?, y: Expression?, secs: Expression?) =
+    addBlock(NormalBlock("motion_glidesecstoxy")
+        .withExpression("SECS", secs, ValueInput.NUMBER.of("1"))
+        .withExpression("X", x, ValueInput.NUMBER.of("0"))
+        .withExpression("Y", y, ValueInput.NUMBER.of("0")))
+
+
+fun BlockHost.pointInDirection(direction: Expression?) =
+    addBlock(NormalBlock("motion_pointindirection")
+        .withExpression("DIRECTION", direction, ValueInput.ANGLE.of("90")))
+
+fun BlockHost.pointTowards(towards: Expression?) =
+    addBlock(NormalBlock("motion_pointtowards")
+        .withExpression("TOWARDS", towards?.changeShadowOpcode("motion_pointtowards_menu"), null))
+
+
+fun BlockHost.changeXBy(dx: Expression?) =
+    addBlock(NormalBlock("motion_changexby")
+        .withExpression("DX", dx, ValueInput.NUMBER.of("10")))
+
+fun BlockHost.setXTo(x: Expression?) =
+    addBlock(NormalBlock("motion_setx")
+        .withExpression("X", x, ValueInput.NUMBER.of("0")))
+
+fun BlockHost.changeYBy(dy: Expression?) =
+    addBlock(NormalBlock("motion_changeyby")
+        .withExpression("DY", dy, ValueInput.NUMBER.of("10")))
+
+fun BlockHost.setYTo(y: Expression?) =
+    addBlock(NormalBlock("motion_sety")
+        .withExpression("Y", y, ValueInput.NUMBER.of("0")))
+
+
+fun BlockHost.ifOnEdgeBounce() =
+    addBlock(NormalBlock("motion_ifonedgebounce"))
+
+
+fun BlockHost.setRotationStyle(rotationStyle: RotationStyle) =
+    addBlock(NormalBlock("motion_setrotationstyle")
+        .withField("STYLE", Field.of(rotationStyle.value)))
+
+
+val xPosition get() =
+    HandlesSetNormalExpression("motion_xposition")
+        .withHandlesSet { x ->
+            NormalBlock("motion_setx")
+                .withExpression("X", x, ValueInput.NUMBER.of("0"))
+        }
+        .withHandlesChange { dx ->
+            NormalBlock("motion_changexby")
+                .withExpression("DX", dx, ValueInput.NUMBER.of("10"))
+        }
+
+val yPosition get() =
+    HandlesSetNormalExpression("motion_yposition")
+        .withHandlesSet { y ->
+            NormalBlock("motion_sety")
+                .withExpression("Y", y, ValueInput.NUMBER.of("0"))
+        }
+        .withHandlesChange { dy ->
+            NormalBlock("motion_changeyby")
+                .withExpression("DY", dy, ValueInput.NUMBER.of("10"))
+        }
+
+val rotation get() =
+    HandlesSetNormalExpression("motion_direction")
+        .withHandlesSet { direction ->
+            NormalBlock("motion_pointindirection")
+                .withExpression("DIRECTION", direction, ValueInput.ANGLE.of("90"))
+        }
+        .withHandlesChange { degrees ->
+            NormalBlock("motion_turnright")
+                .withExpression("DEGREES", degrees, ValueInput.NUMBER.of("15"))
+        }
+
+
+// Looks
+
+fun BlockHost.switchToCostume(costume: Expression?) =
+    addBlock(NormalBlock("looks_switchcostumeto")
+        .withExpression("COSTUME", costume, FirstSprite))
+
+fun BlockHost.switchToBackdrop(backdrop: Expression?) =
+    addBlock(NormalBlock("looks_switchbackdropto")
+        .withExpression("BACKDROP", backdrop.asBackdrop(), FirstBackdrop) // [1, 'b'] // {'opcode': 'looks_backdrops', 'next': None, 'parent': 'a', 'inputs': {}, 'fields': {'BACKDROP': ['Hintergrund1', None]}, 'shadow': True, 'topLevel': False}
+    )
+
+val currentCostumeName: CurrentCostume
+    get() = CurrentCostume(false)
+
+val currentCostumeNumber: CurrentCostume
+    get() = CurrentCostume(true)
+
+val currentCostume: CurrentCostume
+    get() = CurrentCostume(false)
 
 // Control
 

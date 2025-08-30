@@ -1,6 +1,9 @@
+@file:Suppress("unused")
+
 package de.thecommcraft.scratchdsl.build
 
 import kotlinx.serialization.json.*
+import java.nio.file.Path
 import kotlin.random.Random
 
 interface HasId {
@@ -8,7 +11,15 @@ interface HasId {
 }
 
 interface Flattenable {
+    /**
+     * Should recursively call flattenInto on all Flattenable below.
+     */
     fun flattenInto(map: MutableMap<String, AnyBlock>, parentId: String? = null)
+
+    /**
+     * Should recursively call prepareRepresent on all Flattenable below.
+     */
+    fun prepareRepresent(sprite: Sprite)
 }
 
 interface HatBlockHost {
@@ -25,7 +36,18 @@ interface BlockHost {
     infix fun HandlesSet.set(value: Expression?) =
         this.expressionSetHandler?.let {
             addBlock(it(value))
-        }
+        } ?: (NormalBlock("motion_movesteps")
+            .withExpression("STEPS", shadowExpression = ValueInput.NUMBER.of("0")))
+
+    infix fun HandlesSet.changeBy(value: Expression?) =
+        this.expressionChangeHandler?.let {
+            addBlock(it(value))
+        } ?:
+        this.expressionSetHandler?.let {
+            addBlock(it(this + value))
+        } ?: (NormalBlock("motion_movesteps")
+            .withExpression("STEPS", shadowExpression = ValueInput.NUMBER.of("0")))
+
 
     infix fun ScratchList.append(value: Expression?) =
         this@BlockHost.append(this, value)
@@ -71,7 +93,7 @@ interface Field {
 
 interface BlockBlockHost : Block, BlockHost
 
-class BlockStack(private val myId: String = makeId(), val contents: MutableList<Block> = mutableListOf()) : HasId, Flattenable, BlockHost {
+class BlockStack(myId: String = IdGenerator.makeId(), val contents: MutableList<Block> = mutableListOf()) : HasId, Flattenable, BlockHost {
     fun isEmpty() = contents.isEmpty()
     fun isNotEmpty() = contents.isNotEmpty()
     override var id: String = myId
@@ -85,21 +107,27 @@ class BlockStack(private val myId: String = makeId(), val contents: MutableList<
         }
     }
 
+    override fun prepareRepresent(sprite: Sprite) {
+        contents.forEach {
+            if (it is HatBlock) return@forEach
+            it.prepareRepresent(sprite)
+        }
+    }
+
     override fun<B: AnyBlock> addBlock(block: B) = block.apply(contents::add)
 
     override val stacks = listOf(this)
 }
 
-interface HatBlock : BlockBlockHost {
-    fun prepareRepresent() {
-
-    }
-}
+interface HatBlock : BlockBlockHost
 
 class BuildRoot {
     val globalVariables = mutableMapOf<String, VLB>()
     val globalLists = mutableMapOf<String, VLB>()
     val globalBroadcasts = mutableMapOf<String, Broadcast>()
+    val targets = mutableListOf<SpriteBuilder>()
+    val stage get() = targets[0]
+    val sprites get() = targets.subList(1, targets.size - 1)
 }
 
 class SpriteBuilder(val root: BuildRoot) : HatBlockHost, Representable<Representation> {
@@ -110,19 +138,24 @@ class SpriteBuilder(val root: BuildRoot) : HatBlockHost, Representable<Represent
     val costumes = mutableMapOf<String, Costume>()
     val sounds = mutableMapOf<String, Sound>()
     val comments = mutableListOf<Comment>()
-    var name = "Sprite-${makeId().substring(0..<8)}"
+    var name = "Sprite-${IdGenerator.makeId().substring(0..<8)}"
     var startCostume = 0
     var isStage = false
-    var startLayer = 0
+    var startLayer = 1
     var startAudioTempo = 60
     var startTextToSpeechLanguage: String? = null
     var startVideoState = "on"
     var startVideoTranparency = 50
     var startVolume = 100
+
+    private var shouldScrambleNames = false
+
     override fun<B: HatBlock> addHatBlock(hatBlock: B) = hatBlock.apply(hatBlocks::add)
 
     override fun represent(): Representation {
-        hatBlocks.forEach(HatBlock::prepareRepresent)
+        hatBlocks.forEach {
+            it.prepareRepresent(this)
+        }
         val blocks = mutableMapOf<String, AnyBlock>()
         hatBlocks.forEach { hatBlock ->
             hatBlock.stacks.forEach { blockStack ->
@@ -131,12 +164,12 @@ class SpriteBuilder(val root: BuildRoot) : HatBlockHost, Representable<Represent
         }
         return buildJsonObject {
             put("broadcasts", buildJsonObject {
-                broadcasts.forEach { (t, u) ->
+                broadcasts.forEach { (_, u) ->
                     put(u.id, u.name)
                 }
             })
             put("variables", buildJsonObject {
-                variables.forEach { (t, u) ->
+                variables.forEach { (_, u) ->
                     put(u.first.id, buildJsonArray {
                         add(u.first.name)
                         add(u.second)
@@ -145,7 +178,7 @@ class SpriteBuilder(val root: BuildRoot) : HatBlockHost, Representable<Represent
                 }
             })
             put("lists", buildJsonObject {
-                lists.forEach { (t, u) ->
+                lists.forEach { (_, u) ->
                     put(u.first.id, buildJsonArray {
                         add(u.first.name)
                         add(u.second)
@@ -158,13 +191,13 @@ class SpriteBuilder(val root: BuildRoot) : HatBlockHost, Representable<Represent
                 }
             })
             put("costumes", buildJsonArray {
-                costumes.forEach { (t, u) ->
-                    add(u.represent())
+                costumes.forEach { (_, u) ->
+                    add(u.representAsset())
                 }
             })
             put("sounds", buildJsonArray {
-                sounds.forEach { (t, u) ->
-                    add(u.represent())
+                sounds.forEach { (_, u) ->
+                    add(u.representAsset())
                 }
             })
             put("name", name)
@@ -176,65 +209,95 @@ class SpriteBuilder(val root: BuildRoot) : HatBlockHost, Representable<Represent
             put("videoState", startVideoState)
             put("videoTransparency", startVideoTranparency)
             put("volume", startVolume)
-            put("blocks", JsonObject(blocks.mapValues { (t, u) -> u.represent() }))
+            put("blocks", JsonObject(blocks.mapValues { (_, u) -> u.represent() }))
         }
     }
 
-    operator fun Expression.not(): Expression = notBlock(this)
-
-    val Double.expr get() = ValueInput.TEXT.of(this.toString())
-    val Int.expr get() = ValueInput.TEXT.of(this.toString())
-    val String.expr get() = ValueInput.TEXT.of(this)
-
-    fun makeVar(name: String, value: JsonPrimitive = JsonPrimitive(""), cloud: Boolean = false) = Variable(name).apply {
-        if (name in variables || name in root.globalVariables) {
+    fun makeVar(
+        name: String = IdGenerator.makeRandomId(6),
+        value: JsonPrimitive = JsonPrimitive(""),
+        cloud: Boolean = false
+    ) = Variable(if (shouldScrambleNames) IdGenerator.makeRandomId(6) else name).apply {
+        if (this.name in variables || this.name in root.globalVariables) {
             throw IllegalArgumentException("This name is already used.")
         }
-        variables[name] = Triple(this, value, cloud)
+        variables[this.name] = Triple(this, value, cloud)
     }
 
-    fun makeList(name: String, block: JsonArrayBuilder.() -> Unit) = ScratchList(name).apply {
-        if (name in lists || name in root.globalLists) {
+    fun makeList(
+        name: String = IdGenerator.makeRandomId(6),
+        block: JsonArrayBuilder.() -> Unit
+    ) = ScratchList(if (shouldScrambleNames) IdGenerator.makeRandomId(6) else name).apply {
+
+        if (this.name in lists || this.name in root.globalLists) {
             throw IllegalArgumentException("This name is already used.")
         }
-        lists[name] = this to buildJsonArray(block)
+        lists[this.name] = this to buildJsonArray(block)
     }
 
-    fun makeLocalBroadcast(name: String) = Broadcast(name).apply {
-        if (name in broadcasts || name in root.globalBroadcasts) {
+    fun makeLocalBroadcast(
+        name: String = IdGenerator.makeRandomId(6)
+    ) = Broadcast(if (shouldScrambleNames) IdGenerator.makeRandomId(6) else name).apply {
+        if (this.name in broadcasts || this.name in root.globalBroadcasts) {
             throw IllegalArgumentException("This name is already used.")
         }
-        broadcasts[name] = this
+        broadcasts[this.name] = this
     }
-}
 
-const val ALLOWED_CHARS = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
-
-var currentIdIdx = 0
-var isModifying = true
-
-fun makeId(): String {
-    if (!isModifying) {
-        var name = ""
-        val chars = ALLOWED_CHARS.length
-        var residue = currentIdIdx
-        do {
-            name += ALLOWED_CHARS[residue.mod(chars)]
-            residue /= chars
-        } while (residue > 0)
-        currentIdIdx += 1
-        return name
+    fun scrambleLocalNamesAfter() {
+        shouldScrambleNames = true
     }
-    return makeRandomId()
+
+    operator fun Costume.unaryPlus() = apply {
+        costumes[name] = this
+    }
+
+    fun addCostume(
+        name: String,
+        dataFormat: String,
+        assetId: String,
+        rotationCenter: Pair<Double, Double>? = null
+    ) = +Costume(name, dataFormat, assetId, rotationCenter)
+
+    fun addCostume(
+        path: Path,
+        name: String
+    ) = +loadCostume(path, name)
 }
 
-fun makeRandomId(): String {
-    val rawBinary = Random.nextBytes(16)
-    return rawBinary.map { it ->
-        ALLOWED_CHARS[it.toInt().mod(ALLOWED_CHARS.length)]
-    }.joinToString("")
-}
+typealias Sprite = SpriteBuilder
 
 fun build(block: SpriteBuilder.() -> Unit): SpriteBuilder {
     return SpriteBuilder(BuildRoot()).apply(block)
+}
+
+object IdGenerator {
+    const val ALLOWED_CHARS = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+    var currentIdIdx = 0
+    /**
+     * If true, all ids will be randomly generated and not counting up.
+     */
+    var isModifying = true
+
+    fun makeId(): String {
+        if (!isModifying) {
+            var name = ""
+            val chars = ALLOWED_CHARS.length
+            var residue = currentIdIdx
+            do {
+                name += ALLOWED_CHARS[residue.mod(chars)]
+                residue /= chars
+            } while (residue > 0)
+            currentIdIdx += 1
+            return name
+        }
+        return makeRandomId()
+    }
+
+    fun makeRandomId(length: Int = 16): String {
+        val rawBinary = Random.nextBytes(length)
+        return rawBinary.map { it ->
+            ALLOWED_CHARS[it.toInt().mod(ALLOWED_CHARS.length)]
+        }.joinToString("")
+    }
 }

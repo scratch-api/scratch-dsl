@@ -12,30 +12,8 @@
   "monitors": [],
   "targets": [
     {
-      "blocks": {
-        "a": {
-          "fields": {},
-          "inputs": {
-            "BROADCAST_INPUT": [
-              1,
-              [
-                11,
-                "dw",
-                "ARZO=guo_%2Z6C!/Q-,^"
-              ]
-            ]
-          },
-          "next": null,
-          "opcode": "event_broadcast",
-          "parent": null,
-          "shadow": false,
-          "topLevel": true,
-          "x": -28,
-          "y": -149
-        }
-      },
+      "blocks": {},
       "broadcasts": {
-        "$!)fJok]8gl-lR#7Md#5": "aw",
         "ARZO=guo_%2Z6C!/Q-,^": "dw"
       },
       "comments": {},
@@ -62,66 +40,7 @@
       "videoTransparency": 50,
       "volume": 100
     },
-    {
-      "blocks": {
-        "b": {
-          "fields": {},
-          "inputs": {
-            "BROADCAST_INPUT": [
-              1,
-              [
-                11,
-                "aw",
-                "$!)fJok]8gl-lR#7Md#5"
-              ]
-            ]
-          },
-          "next": null,
-          "opcode": "event_broadcast",
-          "parent": null,
-          "shadow": false,
-          "topLevel": true,
-          "x": -127,
-          "y": -134
-        }
-      },
-      "broadcasts": {"awdawdad": "test"},
-      "comments": {},
-      "costumes": [
-        {
-          "assetId": "927d672925e7b99f7813735c484c6922",
-          "bitmapResolution": 1,
-          "dataFormat": "svg",
-          "md5ext": "927d672925e7b99f7813735c484c6922.svg",
-          "name": "Kost\u00fcm1",
-          "rotationCenterX": 30.74937882782359,
-          "rotationCenterY": 58.864768144346826
-        }
-      ],
-      "currentCostume": 0,
-      "direction": 90,
-      "draggable": false,
-      "isStage": false,
-      "layerOrder": 1,
-      "lists": {},
-      "name": "Figur1",
-      "rotationStyle": "all around",
-      "size": 100,
-      "sounds": [
-        {
-          "assetId": "5cb46ddd903fc2c9976ff881df9273c9",
-          "dataFormat": "wav",
-          "md5ext": "5cb46ddd903fc2c9976ff881df9273c9.wav",
-          "name": "A Elec Bass",
-          "rate": 48000,
-          "sampleCount": 12887
-        }
-      ],
-      "variables": {},
-      "visible": true,
-      "volume": 100,
-      "x": 0,
-      "y": 0
-    }
+    {"broadcasts":{},"variables":{"yjVQddqfIASSCKA1":["r1Mgdj",""]},"lists":{},"comments":{},"costumes":[{"assetId":"cd21514d0531fdffb22204e0ec5ed84a","dataFormat":"svg","md5ext":"cd21514d0531fdffb22204e0ec5ed84a.svg","name":"costume1"}],"sounds":[],"name":"Sprite-xIYfkAvz","currentCostume":0,"isStage":false,"layerOrder":1,"tempo":60,"textToSpeechLanguage":null,"videoState":"on","videoTransparency":50,"volume":100,"blocks":{"AO1CCV0R2qkb40Yw":{"inputs":{},"fields":{},"topLevel":true,"next":"kP70s5ZAsBHwsOq4","parent":null,"shadow":false,"opcode":"event_whenflagclicked","x":0,"y":0},"kP70s5ZAsBHwsOq4":{"inputs":{"TO":[1,"erqfvVCEbS5ynlrK"]},"fields":{},"topLevel":false,"next":null,"parent":null,"shadow":false,"opcode":"motion_goto"},"erqfvVCEbS5ynlrK":{"inputs":{},"fields":{"TO":["Sprite-xIYfkAvz",null]},"topLevel":false,"next":null,"parent":null,"shadow":true,"opcode":"motion_goto_menu"}}}
+
   ]
 }

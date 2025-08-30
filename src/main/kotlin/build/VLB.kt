@@ -28,6 +28,11 @@ class Variable internal constructor(name: String) : VLB(null, name, VLBVariant.V
             .withExpression("VALUE", expression, ValueInput.TEXT.of("0"))
             .withField("VARIABLE", this)
     }
+    override var expressionChangeHandler: ((Expression?) -> Block)? = { expression ->
+        NormalBlock("data_changevariableby")
+            .withExpression("VALUE", expression, ValueInput.NUMBER.of("1"))
+            .withField("VARIABLE", this)
+    }
 }
 
 class ScratchList internal constructor(name: String) : VLB(null, name, VLBVariant.LIST)

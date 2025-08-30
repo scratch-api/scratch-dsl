@@ -1,9 +1,6 @@
 package de.thecommcraft.scratchdsl.build
 
-import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.JsonObjectBuilder
-import kotlinx.serialization.json.buildJsonObject
-import kotlinx.serialization.json.put
+import kotlinx.serialization.json.*
 import java.math.BigInteger
 import java.nio.file.Files
 import java.nio.file.Path
@@ -12,14 +9,14 @@ import java.security.MessageDigest
 import kotlin.io.path.extension
 
 
-interface Asset : Representable<JsonObject> {
+interface Asset {
     val name: String
     val assetId: String
     val dataFormat: String
     fun JsonObjectBuilder.extraAttributes() {
 
     }
-    override fun represent() =
+    fun representAsset() =
         buildJsonObject {
             put("assetId", assetId)
             put("dataFormat", dataFormat)
@@ -35,23 +32,58 @@ fun getChecksum(path: Path): String {
     return BigInteger(1, hash).toString(16)
 }
 
-fun loadCostume(path: Path, name: String): Costume {
+internal fun loadCostume(path: Path, name: String): Costume {
     val checksum = getChecksum(path)
     return Costume(name, path.extension, checksum)
 }
 
-data class Costume(
+data class Costume internal constructor(
     override val name: String,
     override val dataFormat: String,
     override val assetId: String,
     val rotationCenter: Pair<Double, Double>? = null
-) : Asset {
+) : Asset, Field, NormalShadowExpression("looks_costume"), ShadowShouldCopy {
+    override val fieldValue: Field.Companion.FieldValue = Field.Companion.FieldValue(name)
     override fun JsonObjectBuilder.extraAttributes() {
         rotationCenter?.let {
             put("rotationCenterX", it.first)
             put("rotationCenterY", it.second)
         }
     }
+
+    init {
+        fields["COSTUME"] = this
+    }
+
+    override fun representAlone() =
+        JsonPrimitive(id)
+
+    override fun makeCopy() =
+        copy()
+}
+
+internal fun Costume.asBackdrop() = Backdrop(name)
+
+internal fun Expression?.asBackdrop(): Expression? {
+    if (this is Costume) {
+        return asBackdrop()
+    }
+    return this
+}
+
+data class Backdrop internal constructor(
+    val name: String
+) : NormalShadowExpression("looks_backdrops"), ShadowShouldCopy, Field {
+    override val fieldValue: Field.Companion.FieldValue = Field.Companion.FieldValue(name)
+
+    init {
+        fields["BACKDROP"] = this
+    }
+
+    override fun makeCopy() = copy()
+
+    override fun representAlone() =
+        JsonPrimitive(id)
 }
 
 data class Comment(
@@ -69,7 +101,7 @@ data class Comment(
             myId?.let {
                 return it
             }
-            val newId = makeId()
+            val newId = IdGenerator.makeId()
             myId = newId
             return newId
         }

@@ -1,3 +1,5 @@
+@file:Suppress("unused")
+
 package de.thecommcraft.scratchdsl.build
 
 import kotlinx.serialization.json.*
@@ -22,8 +24,9 @@ open class NormalExpression(opcode: String?) : NormalBlock(opcode), Expression {
         JsonPrimitive(id)
 }
 
-class HandlesSetNormalExpression(opcode: String?) : NormalExpression(opcode), HandlesSet {
+open class HandlesSetNormalExpression(opcode: String?) : NormalExpression(opcode), HandlesSet {
     override var expressionSetHandler: ((Expression?) -> Block)? = null
+    override var expressionChangeHandler: ((Expression?) -> Block)? = null
 }
 
 open class NormalUnaryOp(
@@ -48,6 +51,7 @@ class HandlesSetNormalUnaryOp(
     shadowExpression: ShadowExpression? = null
 ) : NormalUnaryOp(opcode, expression, expressionInputName, shadowExpression), HandlesSet {
     override var expressionSetHandler: ((Expression?) -> Block)? = null
+    override var expressionChangeHandler: ((Expression?) -> Block)? = null
 }
 
 open class NormalBinaryOp(
@@ -85,6 +89,7 @@ class HandlesSetNormalBinaryOp(
     shadowExpressionB: ShadowExpression? = null
 ) : NormalBinaryOp(opcode, expressionA, expressionB, expressionAInputName, expressionBInputName, shadowExpressionA, shadowExpressionB), HandlesSet {
     override var expressionSetHandler: ((Expression?) -> Block)? = null
+    override var expressionChangeHandler: ((Expression?) -> Block)? = null
 }
 
 interface ShadowExpression : Expression {
@@ -98,7 +103,22 @@ interface ShadowExpression : Expression {
     }
 }
 
+interface NonShadowShouldCopy : Expression {
+    /**
+     * Gets called directly after prepareRepresent
+     */
+    fun makeCopy(): Expression
+}
+
+interface ShadowShouldCopy : ShadowExpression, NonShadowShouldCopy {
+    /**
+     * Gets called directly after prepareRepresent
+     */
+    override fun makeCopy(): ShadowExpression
+}
+
 abstract class NormalShadowExpression(opcode: String? = null) : NormalExpression(opcode), ShadowExpression {
+    override var shadow = true
     abstract override fun representAlone(): Representation
 }
 
@@ -160,4 +180,19 @@ data class ValueShadowExpression(val value: String, override val opcode: String?
             add(numericType)
             add(value)
         }
+}
+
+internal interface OpcodeSettableShadowExpression : ShadowExpression {
+    override var opcode: String?
+}
+
+
+class CurrentCostume internal constructor(number: Boolean) : HandlesSetNormalExpression("looks_costumenumbername") {
+    init {
+        expressionSetHandler = { expression ->
+            NormalBlock("looks_switchcostumeto")
+                .withExpression("COSTUME", expression, FirstSprite)
+        }
+        fields["NUMBER_NAME"] = Field.of(if (number) "number" else "name")
+    }
 }
