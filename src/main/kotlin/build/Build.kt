@@ -252,6 +252,10 @@ class SpriteBuilder(val root: BuildRoot) : HatBlockHost, Representable<Represent
         costumes[name] = this
     }
 
+    operator fun Sound.unaryPlus() = apply {
+        sounds[name] = this
+    }
+
     fun addCostume(
         name: String,
         dataFormat: String,
@@ -263,6 +267,19 @@ class SpriteBuilder(val root: BuildRoot) : HatBlockHost, Representable<Represent
         path: Path,
         name: String
     ) = +loadCostume(path, name)
+
+    fun addSound(
+        name: String,
+        dataFormat: String,
+        assetId: String,
+        rate: Int? = null,
+        sampleCount: Int? = null
+    ) = +Sound(name, dataFormat, assetId, rate, sampleCount)
+
+    fun addSound(
+        path: Path,
+        name: String
+    ) = +loadSound(path, name)
 }
 
 typealias Sprite = SpriteBuilder

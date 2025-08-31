@@ -118,12 +118,12 @@ data class Comment(
     }
 }
 
-fun loadSound(path: Path, name: String): Sound {
+internal fun loadSound(path: Path, name: String): Sound {
     val checksum = getChecksum(path)
     return Sound(name, path.extension, checksum)
 }
 
-data class Sound(
+data class Sound internal constructor(
     override val name: String,
     override val dataFormat: String,
     override val assetId: String,

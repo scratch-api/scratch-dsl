@@ -270,34 +270,6 @@ sealed interface AnyKeyboardKey {
 
 class ChosenKeyboardKey(override val key: String) : AnyKeyboardKey
 
-enum class KeyboardKey(override val key: String) : AnyKeyboardKey {
-    A("a"), B("b"), C("c"),
-    D("d"), E("e"), F("f"),
-    G("g"), H("h"), I("i"),
-    J("j"), K("k"), L("l"),
-    M("m"), N("n"), O("o"),
-    P("p"), Q("q"), R("r"),
-    S("s"), T("t"), U("u"),
-    V("v"), W("w"), X("x"),
-    Y("y"), Z("z"), ZERO("0"),
-    ONE("1"), TWO("2"), THREE("3"),
-    FOUR("4"), FIVE("5"), SIX("6"),
-    SEVEN("7"), EIGHT("8"), NINE("9"),
-    SPACE("space"),
-    LEFT_ARROW("left arrow"),
-    RIGHT_ARROW("right arrow"),
-    UP_ARROW("up arrow"),
-    DOWN_ARROW("down arrow"),
-    ENTER("enter"),
-    ANY("any")
-}
-
-enum class RotationStyle(val value: String) {
-    LEFT_RIGHT("left-right"),
-    DONT_ROTATE("don't rotate"),
-    ALL_AROUND("all around")
-}
-
 operator fun Expression.not(): Expression = notBlock(this)
 
 val Double.expr get() = ValueInput.TEXT.of(this.toString())
@@ -451,10 +423,57 @@ fun BlockHost.switchToCostume(costume: Expression?) =
     addBlock(NormalBlock("looks_switchcostumeto")
         .withExpression("COSTUME", costume, FirstSprite))
 
+fun BlockHost.switchToNextCostume() =
+    addBlock(NormalBlock("looks_nextcostume"))
+
 fun BlockHost.switchToBackdrop(backdrop: Expression?) =
     addBlock(NormalBlock("looks_switchbackdropto")
         .withExpression("BACKDROP", backdrop.asBackdrop(), FirstBackdrop) // [1, 'b'] // {'opcode': 'looks_backdrops', 'next': None, 'parent': 'a', 'inputs': {}, 'fields': {'BACKDROP': ['Hintergrund1', None]}, 'shadow': True, 'topLevel': False}
     )
+
+fun BlockHost.switchToNextBackdrop() =
+    addBlock(NormalBlock("looks_nextbackdrop"))
+
+
+fun BlockHost.changeSizeBy(change: Expression?) =
+    addBlock(NormalBlock("looks_changesizeby")
+        .withExpression("CHANGE", change, ValueInput.NUMBER.of("10")))
+
+fun BlockHost.setSizeTo(size: Expression?) =
+    addBlock(NormalBlock("looks_setsizeto")
+        .withExpression("SIZE", size, ValueInput.NUMBER.of("100")))
+
+
+fun BlockHost.changeEffectBy(effect: LooksEffect, change: Expression?) =
+    addBlock(NormalBlock("looks_changeeffectby")
+        .withExpression("CHANGE", change, ValueInput.NUMBER.of("25"))
+        .withField("EFFECT", Field.of(effect.value)))
+
+fun BlockHost.name(effect: LooksEffect, value: Expression?) =
+    addBlock(NormalBlock("looks_seteffectto")
+        .withExpression("VALUE", value, ValueInput.NUMBER.of("0"))
+        .withField("EFFECT", Field.of(effect.value)))
+
+fun BlockHost.clearGraphicEffects() =
+    addBlock(NormalBlock("looks_cleargraphiceffects"))
+
+
+fun BlockHost.show() =
+    addBlock(NormalBlock("looks_show"))
+
+fun BlockHost.hide() =
+    addBlock(NormalBlock("looks_hide"))
+
+
+fun BlockHost.goToLayer(layer: SpecialLayer) =
+    addBlock(NormalBlock("looks_gotofrontback")
+        .withField("FRONT_BACK", Field.of(layer.value)))
+
+fun BlockHost.changeLayer(layerDirection: LayerDirection, layers: Expression?) =
+    addBlock(NormalBlock("looks_goforwardbackwardlayers")
+        .withExpression("NUM", layers, ValueInput.INTEGER.of("1"))
+        .withField("FORWARD_BACKWARD", Field.of(layerDirection.value)))
+
 
 val currentCostumeName: CurrentCostume
     get() = CurrentCostume(false)
@@ -464,6 +483,18 @@ val currentCostumeNumber: CurrentCostume
 
 val currentCostume: CurrentCostume
     get() = CurrentCostume(false)
+
+fun BlockHost.name() =
+    HandlesSetNormalExpression("looks_size")
+        .withHandlesSet { size ->
+            NormalBlock("looks_setsizeto")
+                .withExpression("SIZE", size, ValueInput.NUMBER.of("100"))
+        }
+        .withHandlesChange { change ->
+            NormalBlock("looks_changesizeby")
+                .withExpression("CHANGE", change, ValueInput.NUMBER.of("10"))
+        }
+
 
 // Control
 
