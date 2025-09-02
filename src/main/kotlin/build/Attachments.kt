@@ -95,7 +95,7 @@ data class Costume internal constructor(
     }
 }
 
-internal fun Costume.asBackdrop() = Backdrop(name)
+internal fun Costume.asBackdrop() = Backdrop(name, this)
 
 internal fun Expression?.asBackdrop(): Expression? {
     if (this is Costume) {
@@ -105,7 +105,8 @@ internal fun Expression?.asBackdrop(): Expression? {
 }
 
 data class Backdrop internal constructor(
-    val name: String
+    val name: String,
+    val costume: Costume
 ) : NormalShadowExpression("looks_backdrops"), ShadowShouldCopy, Field {
     override val fieldValue: Field.Companion.FieldValue = Field.Companion.FieldValue(name)
 

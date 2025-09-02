@@ -402,8 +402,7 @@ fun BlockHost.switchToNextCostume() =
 
 fun BlockHost.switchToBackdrop(backdrop: Expression?) =
     addBlock(NormalBlock("looks_switchbackdropto")
-        .withExpression("BACKDROP", backdrop.asBackdrop(), FirstBackdrop) // [1, 'b'] // {'opcode': 'looks_backdrops', 'next': None, 'parent': 'a', 'inputs': {}, 'fields': {'BACKDROP': ['Hintergrund1', None]}, 'shadow': True, 'topLevel': False}
-    )
+        .withExpression("BACKDROP", backdrop.asBackdrop(), FirstBackdrop))
 
 fun BlockHost.switchToNextBackdrop() =
     addBlock(NormalBlock("looks_nextbackdrop"))
@@ -473,13 +472,11 @@ val BlockHost.size get() =
 
 fun BlockHost.playSoundUntilDone(sound: Expression?) =
     addBlock(NormalBlock("sound_playuntildone")
-        .withExpression("SOUND_MENU", sound, FirstSound) // [1, 'b'] // {'opcode': 'sound_sounds_menu', 'next': None, 'parent': 'a', 'inputs': {}, 'fields': {'SOUND_MENU': ['', None]}, 'shadow': True, 'topLevel': False}
-    )
+        .withExpression("SOUND_MENU", sound, FirstSound))
 
 fun BlockHost.playSound(sound: Expression?) =
     addBlock(NormalBlock("sound_play")
-        .withExpression("SOUND_MENU", sound, FirstSound) // [1, 'b'] // {'opcode': 'sound_sounds_menu', 'next': None, 'parent': 'a', 'inputs': {}, 'fields': {'SOUND_MENU': ['', None]}, 'shadow': True, 'topLevel': False}
-    )
+        .withExpression("SOUND_MENU", sound, FirstSound))
 
 fun BlockHost.stopAllSounds() =
     addBlock(NormalBlock("sound_stopallsounds"))
@@ -659,10 +656,10 @@ fun BlockHost.touchingColor(color: Expression?) =
     NormalExpression("sensing_touchingcolor")
         .withExpression("COLOR", color, ValueInput.COLOUR_PICKER.of("#6deaa0"))
 
-fun BlockHost.colorTouchingColor(color: Expression?, color2: Expression?) =
+infix fun Expression?.colorTouchingColor(other: Expression?) =
     NormalExpression("sensing_coloristouchingcolor")
-        .withExpression("COLOR", color, ValueInput.COLOUR_PICKER.of("#ba2a32"))
-        .withExpression("COLOR2", color2, ValueInput.COLOUR_PICKER.of("#c385eb"))
+        .withExpression("COLOR", this, ValueInput.COLOUR_PICKER.of("#ba2a32"))
+        .withExpression("COLOR2", other, ValueInput.COLOUR_PICKER.of("#c385eb"))
 
 fun BlockHost.distanceTo(expression: Expression?) =
     NormalExpression("sensing_distanceto")
@@ -682,7 +679,7 @@ val BlockHost.answer get() =
 
 fun BlockHost.keyPressed(key: Expression?) =
     NormalExpression("sensing_keypressed")
-        .withExpression("KEY_OPTION", key, KeyboardKey.SPACE.sensingKey) // [1, 'b'] // {'opcode': 'sensing_keyoptions', 'next': None, 'parent': 'a', 'inputs': {}, 'fields': {'KEY_OPTION': ['space', None]}, 'shadow': True, 'topLevel': False}
+        .withExpression("KEY_OPTION", key, KeyboardKey.SPACE.sensingKey)
 
 fun BlockHost.keyPressed(key: KeyboardKey) =
     keyPressed(key.sensingKey)
@@ -734,71 +731,19 @@ fun BlockHost.propertyOf(sprite: Sprite, property: Variable) =
     propertyOf(sprite.propertyTarget, property.property)
 
 
-// VLB
+fun BlockHost.current(timeUnit: TimeUnit) =
+    NormalExpression("sensing_current")
+        .withField("CURRENTMENU", Field.of(timeUnit.value))
 
-fun BlockHost.setVar(variable: Variable, expression: Expression?) =
-    addBlock(NormalBlock("data_setvariableto")
-        .withExpression("VALUE", expression, ValueInput.TEXT.of("0"))
-        .withField("VARIABLE", variable))
+val BlockHost.daysSince2000 get() =
+    NormalExpression("sensing_dayssince2000")
 
-fun BlockHost.changeVar(variable: Variable, expression: Expression?) =
-    addBlock(NormalBlock("data_changevariableby")
-        .withExpression("VALUE", expression, ValueInput.NUMBER.of("1"))
-        .withField("VARIABLE", variable))
+val BlockHost.username get() =
+    NormalExpression("sensing_username")
 
-
-fun BlockHost.append(list: ScratchList, value: Expression?) =
-    addBlock(NormalBlock("data_addtolist")
-        .withExpression("ITEM", value, ValueInput.TEXT.of("thing"))
-        .withField("LIST", list))
-
-fun BlockHost.deleteAtIndex(list: ScratchList, index: Expression?) =
-    addBlock(NormalBlock("data_deleteoflist")
-        .withExpression("INDEX", index, ValueInput.INTEGER.of("1"))
-        .withField("LIST", list))
-
-fun BlockHost.deleteAll(list: ScratchList) =
-    addBlock(NormalBlock("data_deletealloflist")
-        .withField("LIST", list))
-
-fun BlockHost.insertAtIndex(list: ScratchList, value: Expression?, index: Expression?) =
-    addBlock(NormalBlock("data_insertatlist")
-        .withExpression("INDEX", index, ValueInput.INTEGER.of("1"))
-        .withExpression("ITEM", value, ValueInput.TEXT.of("thing"))
-        .withField("LIST", list))
-
-fun BlockHost.replaceAtIndex(list: ScratchList, value: Expression?, index: Expression?) =
-    addBlock(NormalBlock("data_replaceitemoflist")
-        .withExpression("INDEX", index, ValueInput.INTEGER.of("1"))
-        .withExpression("ITEM", value, ValueInput.TEXT.of("thing"))
-        .withField("LIST", list))
-
-operator fun ScratchList.get(index: Expression?) =
-    HandlesSetNormalUnaryOp("data_itemoflist", index, "INDEX", ValueInput.INTEGER.of("1"))
-        .withField("LIST", this)
-        .withHandlesSet { expression ->
-            NormalBlock("data_replaceitemoflist")
-                .withExpression("INDEX", index, ValueInput.INTEGER.of("1"))
-                .withExpression("ITEM", expression, ValueInput.TEXT.of("thing"))
-                .withField("LIST", this)
-        }
-
-fun ScratchList.indexOf(value: Expression?) =
-    NormalUnaryOp("data_itemnumoflist", value, "ITEM", ValueInput.TEXT.of("thing"))
-        .withField("LIST", this)
-
-val ScratchList.length: Expression get() =
-    NormalExpression("data_lengthoflist")
-        .withField("LIST", this)
-
-infix fun ScratchList.containsItem(value: Expression?) =
-    NormalUnaryOp("data_listcontainsitem", value, "ITEM", ValueInput.TEXT.of("thing"))
-        .withField("LIST", this)
 
 // Operators
 
-fun notBlock(expression: Expression?) =
-    NormalUnaryOp("operator_not", expression)
 
 fun round(expression: Expression?) =
     NormalUnaryOp("operator_round", expression, "NUM", ValueInput.NUMBER.of(""))
@@ -909,6 +854,9 @@ infix fun Expression?.or(other: Expression?) =
         "OPERAND2"
     )
 
+fun notBlock(expression: Expression?) =
+    NormalUnaryOp("operator_not", expression)
+
 infix fun Expression?.join(other: Expression?) =
     NormalBinaryOp(
         "operator_join",
@@ -931,7 +879,11 @@ infix fun Expression?.letterOf(other: Expression?) =
         ValueInput.TEXT.of("apple")
     )
 
-infix fun Expression?.contains(other: Expression?) =
+val Expression?.stringLength get() =
+    NormalExpression("operator_length")
+        .withExpression("STRING", this, ValueInput.TEXT.of("apple"))
+
+infix fun Expression?.containsString(other: Expression?) =
     NormalBinaryOp(
         "operator_contains",
         this,
@@ -952,3 +904,88 @@ operator fun Expression?.rem(other: Expression?) =
         ValueInput.NUMBER.of(""),
         ValueInput.NUMBER.of("")
     )
+
+// Mathops are defined using
+// MathOps.<OPERATION>.of(<expression>)
+
+// VLB
+
+fun BlockHost.setVar(variable: Variable, expression: Expression?) =
+    addBlock(NormalBlock("data_setvariableto")
+        .withExpression("VALUE", expression, ValueInput.TEXT.of("0"))
+        .withField("VARIABLE", variable))
+
+fun BlockHost.changeVar(variable: Variable, expression: Expression?) =
+    addBlock(NormalBlock("data_changevariableby")
+        .withExpression("VALUE", expression, ValueInput.NUMBER.of("1"))
+        .withField("VARIABLE", variable))
+
+fun BlockHost.showVar(variable: Variable) =
+    addBlock(NormalBlock("data_showvariable")
+        .withField("VARIABLE", variable))
+
+fun BlockHost.hideVar(variable: Variable) =
+    addBlock(NormalBlock("data_hidevariable")
+        .withField("VARIABLE", variable))
+
+
+
+fun BlockHost.append(list: ScratchList, value: Expression?) =
+    addBlock(NormalBlock("data_addtolist")
+        .withExpression("ITEM", value, ValueInput.TEXT.of("thing"))
+        .withField("LIST", list))
+
+
+fun BlockHost.deleteAtIndex(list: ScratchList, index: Expression?) =
+    addBlock(NormalBlock("data_deleteoflist")
+        .withExpression("INDEX", index, ValueInput.INTEGER.of("1"))
+        .withField("LIST", list))
+
+fun BlockHost.deleteAll(list: ScratchList) =
+    addBlock(NormalBlock("data_deletealloflist")
+        .withField("LIST", list))
+
+fun BlockHost.insertAtIndex(list: ScratchList, value: Expression?, index: Expression?) =
+    addBlock(NormalBlock("data_insertatlist")
+        .withExpression("INDEX", index, ValueInput.INTEGER.of("1"))
+        .withExpression("ITEM", value, ValueInput.TEXT.of("thing"))
+        .withField("LIST", list))
+
+fun BlockHost.replaceAtIndex(list: ScratchList, value: Expression?, index: Expression?) =
+    addBlock(NormalBlock("data_replaceitemoflist")
+        .withExpression("INDEX", index, ValueInput.INTEGER.of("1"))
+        .withExpression("ITEM", value, ValueInput.TEXT.of("thing"))
+        .withField("LIST", list))
+
+
+operator fun ScratchList.get(index: Expression?) =
+    HandlesSetNormalUnaryOp("data_itemoflist", index, "INDEX", ValueInput.INTEGER.of("1"))
+        .withField("LIST", this)
+        .withHandlesSet { expression ->
+            NormalBlock("data_replaceitemoflist")
+                .withExpression("INDEX", index, ValueInput.INTEGER.of("1"))
+                .withExpression("ITEM", expression, ValueInput.TEXT.of("thing"))
+                .withField("LIST", this)
+        }
+
+fun ScratchList.indexOf(value: Expression?) =
+    NormalUnaryOp("data_itemnumoflist", value, "ITEM", ValueInput.TEXT.of("thing"))
+        .withField("LIST", this)
+
+val ScratchList.listLength: Expression get() =
+    NormalExpression("data_lengthoflist")
+        .withField("LIST", this)
+
+infix fun ScratchList.containsItem(value: Expression?) =
+    NormalUnaryOp("data_listcontainsitem", value, "ITEM", ValueInput.TEXT.of("thing"))
+        .withField("LIST", this)
+
+
+fun BlockHost.showList(list: ScratchList) =
+    addBlock(NormalBlock("data_showlist")
+        .withField("LIST", list))
+
+fun BlockHost.hideList(list: ScratchList) =
+    addBlock(NormalBlock("data_hidelist")
+        .withField("LIST", list))
+

@@ -14,8 +14,10 @@ import kotlinx.serialization.json.Json
 
 fun main() {
     println(Json.encodeToString(build {
-        whenGreenFlagClicked {
-            gotoLocation(this@build.specialLocation)
+        sprite {
+            whenGreenFlagClicked {
+                gotoLocation(this@sprite.specialLocation)
+            }
         }
     }))
 }

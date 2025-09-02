@@ -6,6 +6,9 @@ import kotlinx.serialization.json.*
 import java.nio.file.Path
 import kotlin.random.Random
 import okhttp3.*
+import java.util.zip.ZipFile
+import kotlin.io.path.extension
+import kotlin.io.path.readText
 
 interface HasId {
     var id: String
@@ -122,13 +125,68 @@ class BlockStack(myId: String = IdGenerator.makeId(), val contents: MutableList<
 
 interface HatBlock : BlockBlockHost
 
-class BuildRoot internal constructor() {
+class BuildRoot internal constructor() : Representable<Representation> {
     val globalVariables = mutableMapOf<String, VLB>()
     val globalLists = mutableMapOf<String, VLB>()
     val globalBroadcasts = mutableMapOf<String, Broadcast>()
-    val targets = mutableListOf<SpriteBuilder>()
-    val stage get() = targets[0]
-    val sprites get() = targets.subList(1, targets.size - 1)
+    private val stageBuilder = StageBuilder(this)
+    val stage = stageBuilder.spriteBuilder
+    val sprites = mutableListOf<SpriteBuilder>()
+    val targets
+        get() = listOf(stage) + sprites
+    var monitorData: Representation = buildJsonArray {  }
+
+    override fun represent() = buildJsonObject {
+        put("targets", buildJsonArray {
+            targets.forEach { target ->
+                add(target.represent())
+            }
+        })
+        put("monitors", buildJsonArray {  })
+    }
+
+    fun stage(block: StageBuilder.() -> Unit) =
+        stageBuilder.apply(block)
+
+
+    fun sprite(block: SpriteBuilder.() -> Unit) = SpriteBuilder(this).apply {
+        sprites.add(this)
+        block()
+    }
+
+    /**
+     * Can be obtained by first building without it, then configuring the monitors in the scratch editor and
+     * extracting it from the project.json.
+     *
+     * Not required.
+     */
+    fun attachMonitorData(json: String) {
+        monitorData = Json.decodeFromString<Representation>(json)
+    }
+
+    /**
+     * Can be obtained by first building without it, then configuring the monitors in the scratch editor and
+     * extracting it from the project.json.
+     *
+     * Not required.
+     */
+    fun attachMonitorData(json: Representation) {
+        monitorData = json
+    }
+
+    fun extractMonitorDataFrom(path: Path) {
+        val projectJson =
+            if (path.extension == "zip") {
+                val zipFile = ZipFile(path.toFile())
+                zipFile.getInputStream(zipFile.getEntry("project.json"))
+                    .readAllBytes()
+                    .decodeToString()
+            } else {
+                path.readText()
+            }
+        val decodedProjectJson = Json.parseToJsonElement(projectJson)
+        decodedProjectJson.jsonObject["monitors"]?.let { attachMonitorData(it) }
+    }
 }
 
 val httpClient = OkHttpClient()
@@ -140,6 +198,60 @@ fun getHttp(url: String): ByteArray? {
 
     val response = httpClient.newCall(request).execute()
     return response.body?.bytes()
+}
+
+class StageBuilder internal constructor(root: BuildRoot) : HatBlockHost, Representable<Representation> {
+    internal val spriteBuilder = SpriteBuilder(root)
+
+    init {
+        spriteBuilder.isStage = true
+    }
+
+    override fun <B : HatBlock> addHatBlock(hatBlock: B) = spriteBuilder.addHatBlock(hatBlock)
+
+    override fun represent() = spriteBuilder.represent()
+
+    fun makeVar(
+        name: String = IdGenerator.makeRandomId(6),
+        value: JsonPrimitive = JsonPrimitive(""),
+        cloud: Boolean = false
+    ) = spriteBuilder.makeVar(name, value, cloud)
+
+    fun makeList(
+        name: String = IdGenerator.makeRandomId(6),
+        block: JsonArrayBuilder.() -> Unit
+    ) = spriteBuilder.makeList(name, block)
+
+    fun makeBroadcast(
+        name: String = IdGenerator.makeRandomId(6)
+    ) = spriteBuilder.makeLocalBroadcast(name)
+
+    fun addBackdrop(
+        name: String,
+        dataFormat: String,
+        assetId: String,
+        rotationCenter: Pair<Double, Double>? = null,
+        path: Path? = null
+    ) = spriteBuilder.addCostume(name, dataFormat, assetId, rotationCenter, path).asBackdrop()
+
+    fun addBackdrop(
+        path: Path,
+        name: String
+    ) = spriteBuilder.addSound(path, name).asBackdrop()
+
+    fun addSound(
+        name: String,
+        dataFormat: String,
+        assetId: String,
+        rate: Int? = null,
+        sampleCount: Int? = null,
+        path: Path? = null
+    ) = spriteBuilder.addSound(name, dataFormat, assetId, rate, sampleCount, path)
+
+    fun addSound(
+        path: Path,
+        name: String
+    ) = spriteBuilder.addSound(path, name)
 }
 
 class SpriteBuilder internal constructor(val root: BuildRoot) : HatBlockHost, Representable<Representation> {
@@ -237,7 +349,7 @@ class SpriteBuilder internal constructor(val root: BuildRoot) : HatBlockHost, Re
         name: String = IdGenerator.makeRandomId(6),
         value: JsonPrimitive = JsonPrimitive(""),
         cloud: Boolean = false
-    ) = Variable(if (shouldScrambleNames) IdGenerator.makeRandomId(6) else name).apply {
+    ) = Variable(if (shouldScrambleNames) IdGenerator.makeRandomId(6) else name, this).apply {
         if (this.name in variables || this.name in root.globalVariables) {
             throw IllegalArgumentException("This name is already used.")
         }
@@ -247,13 +359,14 @@ class SpriteBuilder internal constructor(val root: BuildRoot) : HatBlockHost, Re
     fun makeList(
         name: String = IdGenerator.makeRandomId(6),
         block: JsonArrayBuilder.() -> Unit
-    ) = ScratchList(if (shouldScrambleNames) IdGenerator.makeRandomId(6) else name).apply {
+    ) = ScratchList(if (shouldScrambleNames) IdGenerator.makeRandomId(6) else name, this).apply {
 
         if (this.name in lists || this.name in root.globalLists) {
             throw IllegalArgumentException("This name is already used.")
         }
         lists[this.name] = this to buildJsonArray(block)
     }
+
 
     fun makeLocalBroadcast(
         name: String = IdGenerator.makeRandomId(6)
@@ -306,11 +419,8 @@ class SpriteBuilder internal constructor(val root: BuildRoot) : HatBlockHost, Re
 
 typealias Sprite = SpriteBuilder
 
-fun build(block: SpriteBuilder.() -> Unit) =
-    SpriteBuilder(BuildRoot()).run {
-        block()
-        represent()
-    }
+fun build(block: BuildRoot.() -> Unit) =
+    BuildRoot().apply(block).represent()
 
 object IdGenerator {
     const val ALLOWED_CHARS = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"

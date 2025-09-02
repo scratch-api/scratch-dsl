@@ -302,3 +302,13 @@ enum class DragMode(val value: String) {
     NOT_DRAGGABLE("not draggable")
 }
 
+enum class TimeUnit(val value: String) {
+    YEAR("YEAR"),
+    MONTH("MONTH"),
+    DATE("DATE"),
+    DAY_OF_WEEK("DAYOFWEEK"),
+    HOUR("HOUR"),
+    MINUTE("MINUTE"),
+    SECOND("SECOND")
+}
+

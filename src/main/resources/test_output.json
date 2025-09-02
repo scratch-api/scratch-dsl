@@ -9,7 +9,75 @@
     "semver": "3.0.0",
     "vm": "0.2.0"
   },
-  "monitors": [],
+  "monitors": [
+    {
+      "height": 0,
+      "id": "loudness",
+      "isDiscrete": true,
+      "mode": "default",
+      "opcode": "sensing_loudness",
+      "params": {},
+      "sliderMax": 100,
+      "sliderMin": 0,
+      "spriteName": null,
+      "value": 0,
+      "visible": false,
+      "width": 0,
+      "x": 5,
+      "y": 5
+    },
+    {
+      "height": 0,
+      "id": "$]oU|eV}yly6pTRj+xMO",
+      "mode": "list",
+      "opcode": "data_listcontents",
+      "params": {
+        "LIST": "awawdsa"
+      },
+      "spriteName": null,
+      "value": [],
+      "visible": true,
+      "width": 0,
+      "x": 5,
+      "y": 5
+    },
+    {
+      "height": 0,
+      "id": "V)~Mlms6jJHYX#?Y`.wC",
+      "isDiscrete": true,
+      "mode": "default",
+      "opcode": "data_variable",
+      "params": {
+        "VARIABLE": "a"
+      },
+      "sliderMax": 100,
+      "sliderMin": 0,
+      "spriteName": null,
+      "value": 0,
+      "visible": true,
+      "width": 0,
+      "x": 5,
+      "y": 212
+    },
+    {
+      "height": 0,
+      "id": "Z/|Cg3YGS-OXTwLnz{5_",
+      "isDiscrete": true,
+      "mode": "default",
+      "opcode": "data_variable",
+      "params": {
+        "VARIABLE": "b"
+      },
+      "sliderMax": 100,
+      "sliderMin": 0,
+      "spriteName": null,
+      "value": 0,
+      "visible": true,
+      "width": 0,
+      "x": 5,
+      "y": 238
+    }
+  ],
   "targets": [
     {
       "blocks": {},
@@ -28,12 +96,26 @@
       "currentCostume": 0,
       "isStage": true,
       "layerOrder": 0,
-      "lists": {},
+      "lists": {
+        "$]oU|eV}yly6pTRj+xMO": [
+          "awawdsa",
+          []
+        ]
+      },
       "name": "Stage",
       "sounds": [],
       "tempo": 60,
       "textToSpeechLanguage": null,
-      "variables": {},
+      "variables": {
+        "V)~Mlms6jJHYX#?Y`.wC": [
+          "a",
+          0
+        ],
+        "Z/|Cg3YGS-OXTwLnz{5_": [
+          "b",
+          0
+        ]
+      },
       "videoState": "on",
       "videoTransparency": 50,
       "volume": 100
@@ -42,19 +124,19 @@
       "blocks": {
         "a": {
           "fields": {
-            "NUMBER_NAME": [
-              "name",
-              null
+            "LIST": [
+              "awawdsa",
+              "$]oU|eV}yly6pTRj+xMO"
             ]
           },
           "inputs": {},
           "next": null,
-          "opcode": "looks_costumenumbername",
+          "opcode": "data_hidelist",
           "parent": null,
           "shadow": false,
           "topLevel": true,
-          "x": -13,
-          "y": 135
+          "x": -319,
+          "y": 19
         }
       },
       "broadcasts": {},
@@ -76,16 +158,20 @@
       "isStage": false,
       "layerOrder": 1,
       "lists": {},
-      "name": "Sprite-8d8bpvvc",
+      "name": "Sprite-xIYfkwd",
       "rotationStyle": "all around",
       "size": 100,
-      "sounds": [],
-      "variables": {
-        "vvf94XwlRZPWChyp": [
-          "X96Cuz",
-          ""
-        ]
-      },
+      "sounds": [
+        {
+          "assetId": "5cb46ddd903fc2c9976ff881df9273c9",
+          "dataFormat": "wav",
+          "md5ext": "5cb46ddd903fc2c9976ff881df9273c9.wav",
+          "name": "A Elec Bass",
+          "rate": 48000,
+          "sampleCount": 12887
+        }
+      ],
+      "variables": {},
       "visible": true,
       "volume": 100,
       "x": 0,
