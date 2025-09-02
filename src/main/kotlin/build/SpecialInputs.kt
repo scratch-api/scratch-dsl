@@ -161,7 +161,7 @@ object FirstBackdrop : NormalShadowExpression("looks_backdrops"), Field, ShadowS
 
     override fun prepareRepresent(sprite: Sprite) {
         super.prepareRepresent(sprite)
-        backdrop = sprite.root.stage.costumes.values.first().asBackdrop()
+        backdrop = sprite.root.stage.backdrops[0]
     }
 
     override fun representAlone(): Representation =

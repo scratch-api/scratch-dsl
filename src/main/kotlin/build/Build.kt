@@ -129,25 +129,36 @@ class BuildRoot internal constructor() : Representable<Representation> {
     val globalVariables = mutableMapOf<String, VLB>()
     val globalLists = mutableMapOf<String, VLB>()
     val globalBroadcasts = mutableMapOf<String, Broadcast>()
-    private val stageBuilder = StageBuilder(this)
-    val stage = stageBuilder.spriteBuilder
+    val stage = StageBuilder(this)
+    private val stageSprite = stage.spriteBuilder
     val sprites = mutableListOf<SpriteBuilder>()
     val targets
-        get() = listOf(stage) + sprites
+        get() = listOf(stageSprite) + sprites
     var monitorData: Representation = buildJsonArray {  }
+        private set
+    private val extensions = mutableListOf<Representation>()
 
     override fun represent() = buildJsonObject {
+        targets.forEach(SpriteBuilder::prepareRepresent)
         put("targets", buildJsonArray {
             targets.forEach { target ->
                 add(target.represent())
             }
         })
-        put("monitors", buildJsonArray {  })
+        put("monitors", monitorData)
+        put("extensions", JsonArray(extensions))
+        put("meta", buildJsonObject {
+            put("agent", "")
+            put("tool", buildJsonObject {
+                put("url", "https://github.com/scratch-api/scratch-dsl")
+            })
+            put("semver", "3.0.0")
+            put("vm", "0.2.0")
+        })
     }
 
     fun stage(block: StageBuilder.() -> Unit) =
-        stageBuilder.apply(block)
-
+        stage.apply(block)
 
     fun sprite(block: SpriteBuilder.() -> Unit) = SpriteBuilder(this).apply {
         sprites.add(this)
@@ -187,6 +198,10 @@ class BuildRoot internal constructor() : Representable<Representation> {
         val decodedProjectJson = Json.parseToJsonElement(projectJson)
         decodedProjectJson.jsonObject["monitors"]?.let { attachMonitorData(it) }
     }
+
+    fun addExtension(extensionRepresentation: Representation) {
+        extensions.add(extensionRepresentation)
+    }
 }
 
 val httpClient = OkHttpClient()
@@ -200,7 +215,7 @@ fun getHttp(url: String): ByteArray? {
     return response.body?.bytes()
 }
 
-class StageBuilder internal constructor(root: BuildRoot) : HatBlockHost, Representable<Representation> {
+class StageBuilder internal constructor(root: BuildRoot) : HatBlockHost {
     internal val spriteBuilder = SpriteBuilder(root)
 
     init {
@@ -209,7 +224,9 @@ class StageBuilder internal constructor(root: BuildRoot) : HatBlockHost, Represe
 
     override fun <B : HatBlock> addHatBlock(hatBlock: B) = spriteBuilder.addHatBlock(hatBlock)
 
-    override fun represent() = spriteBuilder.represent()
+    private val backdropList = mutableListOf<Backdrop>()
+
+    val backdrops: List<Backdrop> = backdropList
 
     fun makeVar(
         name: String = IdGenerator.makeRandomId(6),
@@ -232,12 +249,20 @@ class StageBuilder internal constructor(root: BuildRoot) : HatBlockHost, Represe
         assetId: String,
         rotationCenter: Pair<Double, Double>? = null,
         path: Path? = null
-    ) = spriteBuilder.addCostume(name, dataFormat, assetId, rotationCenter, path).asBackdrop()
+    ): Backdrop {
+        val backdrop = spriteBuilder.addCostume(name, dataFormat, assetId, rotationCenter, path).asBackdrop()
+        backdropList.add(backdrop)
+        return backdrop
+    }
 
     fun addBackdrop(
         path: Path,
         name: String
-    ) = spriteBuilder.addSound(path, name).asBackdrop()
+    ): Backdrop {
+        val backdrop = spriteBuilder.addCostume(path, name).asBackdrop()
+        backdropList.add(backdrop)
+        return backdrop
+    }
 
     fun addSound(
         name: String,
@@ -272,18 +297,20 @@ class SpriteBuilder internal constructor(val root: BuildRoot) : HatBlockHost, Re
     var startVideoTranparency = 50
     var startVolume = 100
 
+    lateinit var allBlocks: Map<String, Block>
+
     private var shouldScrambleNames = false
 
     override fun<B: HatBlock> addHatBlock(hatBlock: B) = hatBlock.apply(hatBlocks::add)
 
-    override fun represent(): Representation {
+    fun prepareRepresent() {
         if (costumes.isEmpty()) {
             val data = "<svg version=\"1.1\" width=\"2\" height=\"2\" viewBox=\"-1 -1 2 2\" xmlns=\"http://www.w3.org/2000/svg\" xmlns:xlink=\"http://www.w3.org/1999/xlink\">\\n  <!-- Exported by Scratch - http://scratch.mit.edu/ -->\\n</svg>"
                 .toByteArray()
             +Costume("costume1", "svg", "cd21514d0531fdffb22204e0ec5ed84a", data=data)
         }
-        if (broadcasts.isEmpty()) {
-            makeLocalBroadcast() // TODO: Replace with global
+        if (broadcasts.isEmpty() && isStage) {
+            root.stage.makeBroadcast("message1")
         }
         hatBlocks.forEach {
             it.prepareRepresent(this)
@@ -294,6 +321,10 @@ class SpriteBuilder internal constructor(val root: BuildRoot) : HatBlockHost, Re
                 blockStack.flattenInto(blocks)
             }
         }
+        allBlocks = blocks
+    }
+
+    override fun represent(): Representation {
         return buildJsonObject {
             put("broadcasts", buildJsonObject {
                 broadcasts.forEach { (_, u) ->
@@ -341,7 +372,7 @@ class SpriteBuilder internal constructor(val root: BuildRoot) : HatBlockHost, Re
             put("videoState", startVideoState)
             put("videoTransparency", startVideoTranparency)
             put("volume", startVolume)
-            put("blocks", JsonObject(blocks.mapValues { (_, u) -> u.represent() }))
+            put("blocks", JsonObject(allBlocks.mapValues { (_, u) -> u.represent() }))
         }
     }
 

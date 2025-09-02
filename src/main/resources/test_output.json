@@ -9,75 +9,7 @@
     "semver": "3.0.0",
     "vm": "0.2.0"
   },
-  "monitors": [
-    {
-      "height": 0,
-      "id": "loudness",
-      "isDiscrete": true,
-      "mode": "default",
-      "opcode": "sensing_loudness",
-      "params": {},
-      "sliderMax": 100,
-      "sliderMin": 0,
-      "spriteName": null,
-      "value": 0,
-      "visible": false,
-      "width": 0,
-      "x": 5,
-      "y": 5
-    },
-    {
-      "height": 0,
-      "id": "$]oU|eV}yly6pTRj+xMO",
-      "mode": "list",
-      "opcode": "data_listcontents",
-      "params": {
-        "LIST": "awawdsa"
-      },
-      "spriteName": null,
-      "value": [],
-      "visible": true,
-      "width": 0,
-      "x": 5,
-      "y": 5
-    },
-    {
-      "height": 0,
-      "id": "V)~Mlms6jJHYX#?Y`.wC",
-      "isDiscrete": true,
-      "mode": "default",
-      "opcode": "data_variable",
-      "params": {
-        "VARIABLE": "a"
-      },
-      "sliderMax": 100,
-      "sliderMin": 0,
-      "spriteName": null,
-      "value": 0,
-      "visible": true,
-      "width": 0,
-      "x": 5,
-      "y": 212
-    },
-    {
-      "height": 0,
-      "id": "Z/|Cg3YGS-OXTwLnz{5_",
-      "isDiscrete": true,
-      "mode": "default",
-      "opcode": "data_variable",
-      "params": {
-        "VARIABLE": "b"
-      },
-      "sliderMax": 100,
-      "sliderMin": 0,
-      "spriteName": null,
-      "value": 0,
-      "visible": true,
-      "width": 0,
-      "x": 5,
-      "y": 238
-    }
-  ],
+  "monitors": [],
   "targets": [
     {
       "blocks": {},
@@ -86,36 +18,23 @@
       "costumes": [
         {
           "assetId": "cd21514d0531fdffb22204e0ec5ed84a",
+          "bitmapResolution": 1,
           "dataFormat": "svg",
           "md5ext": "cd21514d0531fdffb22204e0ec5ed84a.svg",
-          "name": "Hintergrund1",
-          "rotationCenterX": 240,
-          "rotationCenterY": 180
+          "name": "costume1",
+          "rotationCenterX": 1,
+          "rotationCenterY": 1
         }
       ],
       "currentCostume": 0,
       "isStage": true,
       "layerOrder": 0,
-      "lists": {
-        "$]oU|eV}yly6pTRj+xMO": [
-          "awawdsa",
-          []
-        ]
-      },
+      "lists": {},
       "name": "Stage",
       "sounds": [],
       "tempo": 60,
       "textToSpeechLanguage": null,
-      "variables": {
-        "V)~Mlms6jJHYX#?Y`.wC": [
-          "a",
-          0
-        ],
-        "Z/|Cg3YGS-OXTwLnz{5_": [
-          "b",
-          0
-        ]
-      },
+      "variables": {},
       "videoState": "on",
       "videoTransparency": 50,
       "volume": 100
@@ -123,20 +42,43 @@
     {
       "blocks": {
         "a": {
+          "fields": {},
+          "inputs": {
+            "TO": [
+              1,
+              "b"
+            ]
+          },
+          "next": null,
+          "opcode": "motion_goto",
+          "parent": null,
+          "shadow": false,
+          "topLevel": false
+        },
+        "b": {
           "fields": {
-            "LIST": [
-              "awawdsa",
-              "$]oU|eV}yly6pTRj+xMO"
+            "TO": [
+              "Sprite-zHJWxaV3",
+              null
             ]
           },
           "inputs": {},
           "next": null,
-          "opcode": "data_hidelist",
+          "opcode": "motion_goto_menu",
+          "parent": null,
+          "shadow": true,
+          "topLevel": false
+        },
+        "c": {
+          "fields": {},
+          "inputs": {},
+          "next": "a",
+          "opcode": "event_whenflagclicked",
           "parent": null,
           "shadow": false,
           "topLevel": true,
-          "x": -319,
-          "y": 19
+          "x": 0,
+          "y": 0
         }
       },
       "broadcasts": {},
@@ -158,19 +100,10 @@
       "isStage": false,
       "layerOrder": 1,
       "lists": {},
-      "name": "Sprite-xIYfkwd",
+      "name": "Sprite-zHJWxaV3",
       "rotationStyle": "all around",
       "size": 100,
-      "sounds": [
-        {
-          "assetId": "5cb46ddd903fc2c9976ff881df9273c9",
-          "dataFormat": "wav",
-          "md5ext": "5cb46ddd903fc2c9976ff881df9273c9.wav",
-          "name": "A Elec Bass",
-          "rate": 48000,
-          "sampleCount": 12887
-        }
-      ],
+      "sounds": [],
       "variables": {},
       "visible": true,
       "volume": 100,
