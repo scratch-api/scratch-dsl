@@ -1,15 +1,27 @@
+@file:Suppress("unused")
+
 package de.thecommcraft.scratchdsl.build
 
 import kotlinx.serialization.json.JsonPrimitive
 
+val SpriteBuilder.specialLocation get() = SpecialLocation.of(name)
 
-val randomLocation = SpecialLocation.of("_random_")
-val mouseLocation = SpecialLocation.of("_mouse_")
+val SpriteBuilder.cloneTarget get() = CloneTarget.of(name)
 
-val SpriteBuilder.asSpecialLocation get() = SpecialLocation.of(name)
+val SpriteBuilder.touchObject get() = TouchObject.of(name)
+
+val SpriteBuilder.distanceObject get() = DistanceObject.of(name)
+
+val SpriteBuilder.propertyTarget get() = PropertyTarget.of(name)
+
+val Variable.property get() = Property.of(name)
+
+val KeyboardKey.sensingKey get() = SensingKey.of(this)
 
 interface SpecialLocation : ShadowExpression, ShadowShouldCopy {
     companion object {
+        val random = of("_random_")
+        val mouse = of("_mouse_")
         fun of(target: String, opcode: String? = null): SpecialLocation =
             object : NormalShadowExpression(null), SpecialLocation, OpcodeSettableShadowExpression {
                 override val target = target
@@ -25,10 +37,116 @@ interface SpecialLocation : ShadowExpression, ShadowShouldCopy {
     }
     val target: String
 }
-enum class RotationStyle(val value: String) {
-    LEFT_RIGHT("left-right"),
-    DONT_ROTATE("don't rotate"),
-    ALL_AROUND("all around")
+
+interface CloneTarget : ShadowExpression, ShadowShouldCopy {
+    companion object {
+        val myself = of("_myself_")
+        fun of(target: String): CloneTarget =
+            object : NormalShadowExpression("control_create_clone_of_menu"), CloneTarget {
+                override val target = target
+                override fun representAlone(): Representation =
+                    JsonPrimitive(id)
+                init {
+                    fields["CLONE_OPTION"] = Field.of(target)
+                }
+
+                override fun makeCopy() = of(this.target)
+            }
+    }
+    val target: String
+}
+
+interface TouchObject : ShadowExpression, ShadowShouldCopy {
+    companion object {
+        val mouse = of("_mouse_")
+        val edge = of("_edge_")
+        fun of(target: String): TouchObject =
+            object : NormalShadowExpression("sensing_touchingobjectmenu"), TouchObject {
+                override val target = target
+                override fun representAlone(): Representation =
+                    JsonPrimitive(id)
+                init {
+                    fields["TOUCHINGOBJECTMENU"] = Field.of(target)
+                }
+
+                override fun makeCopy() = of(this.target)
+            }
+    }
+    val target: String
+}
+
+interface DistanceObject : ShadowExpression, ShadowShouldCopy {
+    companion object {
+        val mouse = of("_mouse_")
+        fun of(target: String): DistanceObject =
+            object : NormalShadowExpression("sensing_distancetomenu"), DistanceObject {
+                override val target = target
+                override fun representAlone(): Representation =
+                    JsonPrimitive(id)
+                init {
+                    fields["DISTANCETOMENU"] = Field.of(target)
+                }
+
+                override fun makeCopy() = of(this.target)
+            }
+    }
+    val target: String
+}
+
+interface SensingKey : ShadowExpression, ShadowShouldCopy {
+    companion object {
+        fun of(key: KeyboardKey): SensingKey =
+            object : NormalShadowExpression("sensing_keyoptions"), SensingKey {
+                override val key = key
+                override fun representAlone(): Representation =
+                    JsonPrimitive(id)
+                init {
+                    fields["KEY_OPTION"] = Field.of(key.name)
+                }
+
+                override fun makeCopy() = of(this.key)
+            }
+    }
+    val key: KeyboardKey
+}
+
+interface PropertyTarget : ShadowExpression, ShadowShouldCopy {
+    companion object {
+        val stage = of("_stage_")
+        fun of(target: String): PropertyTarget =
+            object : NormalShadowExpression("sensing_of_object_menu"), PropertyTarget {
+                override val target = target
+                override fun representAlone(): Representation =
+                    JsonPrimitive(id)
+                init {
+                    fields["OBJECT"] = Field.of(target)
+                }
+
+                override fun makeCopy() = of(this.target)
+            }
+    }
+    val target: String
+}
+
+interface Property : Field {
+    companion object {
+        val backdropNumber = of("backdrop #")
+        val backdropName = of("backdrop name")
+        val xPosition = of("x position")
+        val yPosition = of("y position")
+        val direction = of("direction")
+        val costumeNumber = of("costume #")
+        val costumeName = of("costume name")
+        val size = of("size")
+        val volume = of("volume")
+        fun of(target: String): Property =
+            object : Field, Property {
+                override val target = target
+                override val fieldValue: Field.Companion.FieldValue
+                    get() = Field.Companion.FieldValue(target)
+            }
+    }
+    val target: String
 }
 
 object FirstBackdrop : NormalShadowExpression("looks_backdrops"), Field, ShadowShouldCopy {
@@ -75,6 +193,52 @@ object FirstSprite : NormalShadowExpression("looks_costume"), Field, ShadowShoul
         costume.makeCopy()
 }
 
+object FirstSound : NormalShadowExpression("sound_sounds_menu"), Field, ShadowShouldCopy {
+    private var sound: Sound? = null
+
+    override val fieldValue: Field.Companion.FieldValue
+        get() = Field.Companion.FieldValue(sound?.name ?: "")
+
+    init {
+        fields["COSTUME"] = this
+    }
+
+    override fun prepareRepresent(sprite: Sprite) {
+        super.prepareRepresent(sprite)
+        sound = sprite.sounds.toList().getOrNull(0)?.second
+    }
+
+    override fun representAlone(): Representation =
+        JsonPrimitive(id)
+
+    override fun makeCopy() =
+        sound?.makeCopy() ?: Sound("", "", "")
+}
+
+object FirstBroadcast : NormalShadowExpression("sound_sounds_menu"), Field, ShadowShouldCopy {
+    private lateinit var broadcast: Broadcast
+
+    override val fieldValue: Field.Companion.FieldValue
+        get() = Field.Companion.FieldValue(broadcast.name, broadcast.id)
+
+    override fun prepareRepresent(sprite: Sprite) {
+        super.prepareRepresent(sprite)
+        broadcast = sprite.broadcasts.toList()[0].second
+    }
+
+    override fun representAlone(): Representation =
+        JsonPrimitive(id)
+
+    override fun makeCopy() =
+        broadcast
+}
+
+enum class RotationStyle(val value: String) {
+    LEFT_RIGHT("left-right"),
+    DONT_ROTATE("don't rotate"),
+    ALL_AROUND("all around")
+}
+
 enum class LooksEffect(val value: String) {
     COLOR("COLOR"),
     FISHEYE("FISHEYE"),
@@ -93,6 +257,22 @@ enum class SpecialLayer(val value: String) {
 enum class LayerDirection(val value: String) {
     FORWARD("forward"),
     BACKWARD("backward")
+}
+
+enum class SoundEffect(val value: String) {
+    PITCH("PITCH"),
+    PAN("PAN")
+}
+
+enum class WhenGreaterThanComparedValue(val value: String) {
+    LOUDNESS("LOUDNESS"),
+    TIMER("TIMER")
+}
+
+enum class StopType(val code: String) {
+    ALL("all"),
+    THIS_SCRIPT("this script"),
+    OTHER_SCRIPTS_IN_SPRITE("other scripts in sprite")
 }
 
 enum class KeyboardKey(override val key: String) : AnyKeyboardKey {
@@ -116,3 +296,9 @@ enum class KeyboardKey(override val key: String) : AnyKeyboardKey {
     ENTER("enter"),
     ANY("any")
 }
+
+enum class DragMode(val value: String) {
+    DRAGGABLE("draggable"),
+    NOT_DRAGGABLE("not draggable")
+}
+

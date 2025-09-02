@@ -3,7 +3,6 @@ package de.thecommcraft.scratchdsl
 import de.thecommcraft.scratchdsl.build.*
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.add
 
 // "assetId": "cd21514d0531fdffb22204e0ec5ed84a",
 //          "bitmapResolution": 1,
@@ -15,10 +14,8 @@ import kotlinx.serialization.json.add
 
 fun main() {
     println(Json.encodeToString(build {
-        val costumeA = addCostume("costume1", "svg", "cd21514d0531fdffb22204e0ec5ed84a")
-        val variable = makeVar()
         whenGreenFlagClicked {
-            gotoLocation(this@build.asSpecialLocation)
+            gotoLocation(this@build.specialLocation)
         }
-    }.represent()))
+    }))
 }

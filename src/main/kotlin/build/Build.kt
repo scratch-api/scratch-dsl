@@ -5,6 +5,7 @@ package de.thecommcraft.scratchdsl.build
 import kotlinx.serialization.json.*
 import java.nio.file.Path
 import kotlin.random.Random
+import okhttp3.*
 
 interface HasId {
     var id: String
@@ -121,7 +122,7 @@ class BlockStack(myId: String = IdGenerator.makeId(), val contents: MutableList<
 
 interface HatBlock : BlockBlockHost
 
-class BuildRoot {
+class BuildRoot internal constructor() {
     val globalVariables = mutableMapOf<String, VLB>()
     val globalLists = mutableMapOf<String, VLB>()
     val globalBroadcasts = mutableMapOf<String, Broadcast>()
@@ -130,7 +131,18 @@ class BuildRoot {
     val sprites get() = targets.subList(1, targets.size - 1)
 }
 
-class SpriteBuilder(val root: BuildRoot) : HatBlockHost, Representable<Representation> {
+val httpClient = OkHttpClient()
+
+fun getHttp(url: String): ByteArray? {
+    val request = Request.Builder()
+        .url(url)
+        .build()
+
+    val response = httpClient.newCall(request).execute()
+    return response.body?.bytes()
+}
+
+class SpriteBuilder internal constructor(val root: BuildRoot) : HatBlockHost, Representable<Representation> {
     val hatBlocks = mutableListOf<HatBlock>()
     val variables = mutableMapOf<String, Triple<Variable, JsonPrimitive, Boolean>>()
     val lists = mutableMapOf<String, Pair<ScratchList, JsonArray>>()
@@ -153,6 +165,14 @@ class SpriteBuilder(val root: BuildRoot) : HatBlockHost, Representable<Represent
     override fun<B: HatBlock> addHatBlock(hatBlock: B) = hatBlock.apply(hatBlocks::add)
 
     override fun represent(): Representation {
+        if (costumes.isEmpty()) {
+            val data = "<svg version=\"1.1\" width=\"2\" height=\"2\" viewBox=\"-1 -1 2 2\" xmlns=\"http://www.w3.org/2000/svg\" xmlns:xlink=\"http://www.w3.org/1999/xlink\">\\n  <!-- Exported by Scratch - http://scratch.mit.edu/ -->\\n</svg>"
+                .toByteArray()
+            +Costume("costume1", "svg", "cd21514d0531fdffb22204e0ec5ed84a", data=data)
+        }
+        if (broadcasts.isEmpty()) {
+            makeLocalBroadcast() // TODO: Replace with global
+        }
         hatBlocks.forEach {
             it.prepareRepresent(this)
         }
@@ -260,8 +280,9 @@ class SpriteBuilder(val root: BuildRoot) : HatBlockHost, Representable<Represent
         name: String,
         dataFormat: String,
         assetId: String,
-        rotationCenter: Pair<Double, Double>? = null
-    ) = +Costume(name, dataFormat, assetId, rotationCenter)
+        rotationCenter: Pair<Double, Double>? = null,
+        path: Path? = null
+    ) = +Costume(name, dataFormat, assetId, rotationCenter, path)
 
     fun addCostume(
         path: Path,
@@ -273,8 +294,9 @@ class SpriteBuilder(val root: BuildRoot) : HatBlockHost, Representable<Represent
         dataFormat: String,
         assetId: String,
         rate: Int? = null,
-        sampleCount: Int? = null
-    ) = +Sound(name, dataFormat, assetId, rate, sampleCount)
+        sampleCount: Int? = null,
+        path: Path? = null
+    ) = +Sound(name, dataFormat, assetId, rate, sampleCount, path)
 
     fun addSound(
         path: Path,
@@ -284,9 +306,11 @@ class SpriteBuilder(val root: BuildRoot) : HatBlockHost, Representable<Represent
 
 typealias Sprite = SpriteBuilder
 
-fun build(block: SpriteBuilder.() -> Unit): SpriteBuilder {
-    return SpriteBuilder(BuildRoot()).apply(block)
-}
+fun build(block: SpriteBuilder.() -> Unit) =
+    SpriteBuilder(BuildRoot()).run {
+        block()
+        represent()
+    }
 
 object IdGenerator {
     const val ALLOWED_CHARS = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"

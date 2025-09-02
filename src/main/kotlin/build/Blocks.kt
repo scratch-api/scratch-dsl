@@ -278,36 +278,10 @@ val String.expr get() = ValueInput.TEXT.of(this)
 
 class ManuallyMadeBlock(opcode: String?) : NormalBlock(opcode)
 
-// Hats
+
 
 fun HatBlockHost.isolated(block: BlockHost.() -> Unit): HatBlock {
     val hatBlock = IsolatedBlockStackHat(BlockStack().apply(block))
-    return addHatBlock(hatBlock)
-}
-
-fun HatBlockHost.whenGreenFlagClicked(block: BlockHost.() -> Unit): HatBlock {
-    val hatBlock = NormalHatBlock("event_whenflagclicked")
-    hatBlock.blockStack.block()
-    return addHatBlock(hatBlock)
-}
-
-fun HatBlockHost.whenKeyPressed(key: AnyKeyboardKey, block: BlockHost.() -> Unit): NormalHatBlock {
-    val hatBlock = NormalHatBlock("event_whenkeypressed")
-        .withField("KEY_OPTION", Field.of(key.key))
-    hatBlock.blockStack.block()
-    return addHatBlock(hatBlock)
-}
-
-fun HatBlockHost.whenClicked(block: BlockHost.() -> Unit): NormalHatBlock {
-    val hatBlock = NormalHatBlock("event_whenthisspriteclicked")
-    hatBlock.blockStack.block()
-    return addHatBlock(hatBlock)
-}
-
-fun HatBlockHost.whenBackdropSwitchesTo(backdrop: Costume, block: BlockHost.() -> Unit): NormalHatBlock {
-    val hatBlock = NormalHatBlock("event_whenbackdropswitchesto")
-        .withField("BACKDROP", backdrop)
-    hatBlock.blockStack.block()
     return addHatBlock(hatBlock)
 }
 
@@ -329,7 +303,7 @@ fun BlockHost.turnLeft(degrees: Expression?) =
 
 fun BlockHost.gotoLocation(to: Expression?) =
     addBlock(NormalBlock("motion_goto")
-        .withExpression("TO", to?.changeShadowOpcode("motion_goto_menu"), randomLocation))
+        .withExpression("TO", to?.changeShadowOpcode("motion_goto_menu"), SpecialLocation.random))
 
 fun BlockHost.gotoXY(x: Expression?, y: Expression?) =
     addBlock(NormalBlock("motion_gotoxy")
@@ -444,12 +418,12 @@ fun BlockHost.setSizeTo(size: Expression?) =
         .withExpression("SIZE", size, ValueInput.NUMBER.of("100")))
 
 
-fun BlockHost.changeEffectBy(effect: LooksEffect, change: Expression?) =
+fun BlockHost.changeLooksEffectBy(effect: LooksEffect, change: Expression?) =
     addBlock(NormalBlock("looks_changeeffectby")
         .withExpression("CHANGE", change, ValueInput.NUMBER.of("25"))
         .withField("EFFECT", Field.of(effect.value)))
 
-fun BlockHost.name(effect: LooksEffect, value: Expression?) =
+fun BlockHost.setLooksEffect(effect: LooksEffect, value: Expression?) =
     addBlock(NormalBlock("looks_seteffectto")
         .withExpression("VALUE", value, ValueInput.NUMBER.of("0"))
         .withField("EFFECT", Field.of(effect.value)))
@@ -484,7 +458,7 @@ val currentCostumeNumber: CurrentCostume
 val currentCostume: CurrentCostume
     get() = CurrentCostume(false)
 
-fun BlockHost.name() =
+val BlockHost.size get() =
     HandlesSetNormalExpression("looks_size")
         .withHandlesSet { size ->
             NormalBlock("looks_setsizeto")
@@ -495,8 +469,125 @@ fun BlockHost.name() =
                 .withExpression("CHANGE", change, ValueInput.NUMBER.of("10"))
         }
 
+// Sound
+
+fun BlockHost.playSoundUntilDone(sound: Expression?) =
+    addBlock(NormalBlock("sound_playuntildone")
+        .withExpression("SOUND_MENU", sound, FirstSound) // [1, 'b'] // {'opcode': 'sound_sounds_menu', 'next': None, 'parent': 'a', 'inputs': {}, 'fields': {'SOUND_MENU': ['', None]}, 'shadow': True, 'topLevel': False}
+    )
+
+fun BlockHost.playSound(sound: Expression?) =
+    addBlock(NormalBlock("sound_play")
+        .withExpression("SOUND_MENU", sound, FirstSound) // [1, 'b'] // {'opcode': 'sound_sounds_menu', 'next': None, 'parent': 'a', 'inputs': {}, 'fields': {'SOUND_MENU': ['', None]}, 'shadow': True, 'topLevel': False}
+    )
+
+fun BlockHost.stopAllSounds() =
+    addBlock(NormalBlock("sound_stopallsounds"))
+
+
+fun BlockHost.changeSoundEffectBy(soundEffect: SoundEffect, value: Expression?) =
+    addBlock(NormalBlock("sound_changeeffectby")
+        .withExpression("VALUE", value, ValueInput.NUMBER.of("10"))
+        .withField("EFFECT", Field.of(soundEffect.value)))
+
+fun BlockHost.setSoundEffect(soundEffect: SoundEffect, value: Expression?) =
+    addBlock(NormalBlock("sound_seteffectto")
+        .withExpression("VALUE", value, ValueInput.NUMBER.of("100"))
+        .withField("EFFECT", Field.of(soundEffect.value)))
+
+fun BlockHost.clearSoundEffects() =
+    addBlock(NormalBlock("sound_cleareffects"))
+
+
+fun BlockHost.changeVolumeBy(volume: Expression?) =
+    addBlock(NormalBlock("sound_changevolumeby")
+        .withExpression("VOLUME", volume, ValueInput.NUMBER.of("-10")))
+
+fun BlockHost.setVolume(volume: Expression?) =
+    addBlock(NormalBlock("sound_setvolumeto")
+        .withExpression("VOLUME", volume, ValueInput.NUMBER.of("100")))
+
+val BlockHost.volume get() =
+    HandlesSetNormalExpression("sound_volume")
+        .withHandlesSet { volume ->
+            NormalBlock("sound_setvolumeto")
+                .withExpression("VOLUME", volume, ValueInput.NUMBER.of("100"))
+        }
+        .withHandlesChange { volume ->
+            NormalBlock("sound_changevolumeby")
+                .withExpression("VOLUME", volume, ValueInput.NUMBER.of("-10"))
+        }
+
+// Events
+
+fun HatBlockHost.whenGreenFlagClicked(block: BlockHost.() -> Unit): HatBlock {
+    val hatBlock = NormalHatBlock("event_whenflagclicked")
+    hatBlock.blockStack.block()
+    return addHatBlock(hatBlock)
+}
+
+fun HatBlockHost.whenKeyPressed(key: AnyKeyboardKey, block: BlockHost.() -> Unit): NormalHatBlock {
+    val hatBlock = NormalHatBlock("event_whenkeypressed")
+        .withField("KEY_OPTION", Field.of(key.key))
+    hatBlock.blockStack.block()
+    return addHatBlock(hatBlock)
+}
+
+fun HatBlockHost.whenClicked(block: BlockHost.() -> Unit): NormalHatBlock {
+    val hatBlock = NormalHatBlock("event_whenthisspriteclicked")
+    hatBlock.blockStack.block()
+    return addHatBlock(hatBlock)
+}
+
+fun HatBlockHost.whenBackdropSwitchesTo(backdrop: Costume, block: BlockHost.() -> Unit): NormalHatBlock {
+    val hatBlock = NormalHatBlock("event_whenbackdropswitchesto")
+        .withField("BACKDROP", backdrop)
+    hatBlock.blockStack.block()
+    return addHatBlock(hatBlock)
+}
+
+
+fun HatBlockHost.whenGreaterThan(compared: WhenGreaterThanComparedValue, value: Expression?, block: BlockHost.() -> Unit): NormalHatBlock {
+    val hatBlock = NormalHatBlock("event_whenbackdropswitchesto")
+        .withExpression("VALUE", value, ValueInput.NUMBER.of("10"))
+        .withField("WHENGREATERTHANMENU", Field.of(compared.value))
+    hatBlock.blockStack.block()
+    return addHatBlock(hatBlock)
+}
+
+
+fun HatBlockHost.whenIReceive(broadcast: Broadcast, block: BlockHost.() -> Unit): NormalHatBlock {
+    val hatBlock = NormalHatBlock("event_whenbackdropswitchesto")
+        .withField("BROADCAST_OPTION", broadcast)
+    hatBlock.blockStack.block()
+    return addHatBlock(hatBlock)
+}
+
+fun BlockHost.broadcast(broadcast: Broadcast) =
+    addBlock(NormalBlock("event_broadcast")
+        .withExpression("BROADCAST_INPUT", broadcast, FirstBroadcast))
+
+fun BlockHost.broadcastAndWait(broadcast: Broadcast) =
+    addBlock(NormalBlock("event_broadcastandwait")
+        .withExpression("BROADCAST_INPUT", broadcast, FirstBroadcast))
 
 // Control
+
+fun BlockHost.waitDuration(duration: Expression?) =
+    addBlock(NormalBlock("control_wait")
+        .withExpression("DURATION", duration, ValueInput.POSITIVE_NUMBER.of("1")))
+
+fun BlockHost.repeatBlock(expression: Expression?, block: BlockHost.() -> Unit): NormalBlockBlockHost {
+    val stack = BlockStack().apply(block)
+    return addBlock(NormalBlockBlockHost("control_repeat", stack)
+        .withExpression("TIMES", expression, ValueInput.POSITIVE_INTEGER.of("10")))
+}
+
+fun BlockHost.foreverBlock(block: BlockHost.() -> Unit): NormalBlockBlockHost {
+    val stack = BlockStack().apply(block)
+    return addBlock(NormalBlockBlockHost("control_forever", stack))
+}
+
 
 fun BlockHost.ifBlock(expression: Expression?, block: BlockHost.() -> Unit): ConditionalBlockBlockHost {
     val stack = BlockStack().apply(block)
@@ -512,7 +603,14 @@ infix fun HalfIfElse.elseBlock(block: BlockHost.() -> Unit): IfElseBlock {
     return blockHost.addBlock(IfElseBlock(expression, stack, secStack))
 }
 
-fun BlockHost.untilBlock(expression: Expression?, block: BlockHost.() -> Unit): ConditionalBlockBlockHost {
+fun BlockHost.waitUntilBlock(expression: Expression?): NormalBlock {
+    return addBlock(
+        NormalBlock("control_wait_until")
+            .withExpression("CONDITION", expression)
+    )
+}
+
+fun BlockHost.repeatUntilBlock(expression: Expression?, block: BlockHost.() -> Unit): ConditionalBlockBlockHost {
     val stack = BlockStack().apply(block)
     return addBlock(ConditionalBlockBlockHost("control_repeat_until", expression, stack))
 }
@@ -522,32 +620,6 @@ fun BlockHost.whileBlock(expression: Expression?, block: BlockHost.() -> Unit): 
     return addBlock(ConditionalBlockBlockHost("control_while", expression, stack))
 }
 
-fun BlockHost.repeatBlock(expression: Expression?, block: BlockHost.() -> Unit): NormalBlockBlockHost {
-    val stack = BlockStack().apply(block)
-    return addBlock(NormalBlockBlockHost("control_repeat", stack)
-        .withExpression("TIMES", expression, ValueInput.POSITIVE_INTEGER.of("10")))
-}
-
-fun BlockHost.foreverBlock(block: BlockHost.() -> Unit): NormalBlockBlockHost {
-    val stack = BlockStack().apply(block)
-    return addBlock(NormalBlockBlockHost("control_forever", stack))
-}
-
-fun BlockHost.waitForBlock(expression: Expression?): NormalBlock {
-    return addBlock(NormalBlock("control_wait")
-        .withExpression("DURATION", expression, ValueInput.POSITIVE_NUMBER.of("1")))
-}
-
-fun BlockHost.waitUntilBlock(expression: Expression?): NormalBlock {
-    return addBlock(NormalBlock("control_wait_until")
-        .withExpression("CONDITION", expression))
-}
-
-enum class StopType(val code: String) {
-    ALL("all"),
-    THIS_SCRIPT("this script"),
-    OTHER_SCRIPTS_IN_SPRITE("other scripts in sprite")
-}
 
 fun BlockHost.stopBlock(stopType: StopType = StopType.THIS_SCRIPT): NormalBlock {
     val hasNext = stopType == StopType.OTHER_SCRIPTS_IN_SPRITE
@@ -556,6 +628,111 @@ fun BlockHost.stopBlock(stopType: StopType = StopType.THIS_SCRIPT): NormalBlock 
         .withDefaultMutation()
         .withMutation("hasnext", JsonPrimitive(hasNext)))
 }
+
+
+fun HatBlockHost.whenIStartAsClone(block: BlockHost.() -> Unit): HatBlock {
+    val hatBlock = NormalHatBlock("control_start_as_clone")
+    hatBlock.blockStack.block()
+    return addHatBlock(hatBlock)
+}
+
+fun BlockHost.createCloneOf(cloneOption: Expression?) =
+    addBlock(NormalBlock("control_create_clone_of")
+        .withExpression("CLONE_OPTION", cloneOption, CloneTarget.myself))
+
+fun BlockHost.createCloneOf(sprite: Sprite) =
+    createCloneOf(sprite.cloneTarget)
+
+fun BlockHost.deleteThisClone() =
+    addBlock(NormalBlock("control_delete_this_clone"))
+
+// Sensing
+
+fun BlockHost.touching(expression: Expression?) =
+    NormalExpression("sensing_touchingobject")
+        .withExpression("TOUCHINGOBJECTMENU", expression, TouchObject.mouse)
+
+fun BlockHost.touching(sprite: Sprite) =
+    touching(sprite.touchObject)
+
+fun BlockHost.touchingColor(color: Expression?) =
+    NormalExpression("sensing_touchingcolor")
+        .withExpression("COLOR", color, ValueInput.COLOUR_PICKER.of("#6deaa0"))
+
+fun BlockHost.colorTouchingColor(color: Expression?, color2: Expression?) =
+    NormalExpression("sensing_coloristouchingcolor")
+        .withExpression("COLOR", color, ValueInput.COLOUR_PICKER.of("#ba2a32"))
+        .withExpression("COLOR2", color2, ValueInput.COLOUR_PICKER.of("#c385eb"))
+
+fun BlockHost.distanceTo(expression: Expression?) =
+    NormalExpression("sensing_distanceto")
+        .withExpression("DISTANCETOMENU", expression, DistanceObject.mouse)
+
+fun BlockHost.distanceTo(sprite: Sprite) =
+    distanceTo(sprite.distanceObject)
+
+
+fun BlockHost.askAndWait(question: Expression?) =
+    addBlock(NormalBlock("sensing_askandwait")
+        .withExpression("QUESTION", question, ValueInput.TEXT.of("What's your name?")))
+
+val BlockHost.answer get() =
+    NormalExpression("sensing_answer")
+
+
+fun BlockHost.keyPressed(key: Expression?) =
+    NormalExpression("sensing_keypressed")
+        .withExpression("KEY_OPTION", key, KeyboardKey.SPACE.sensingKey) // [1, 'b'] // {'opcode': 'sensing_keyoptions', 'next': None, 'parent': 'a', 'inputs': {}, 'fields': {'KEY_OPTION': ['space', None]}, 'shadow': True, 'topLevel': False}
+
+fun BlockHost.keyPressed(key: KeyboardKey) =
+    keyPressed(key.sensingKey)
+
+val BlockHost.mouseDown get() =
+    NormalExpression("sensing_mousedown")
+
+val BlockHost.mouseX get() =
+    NormalExpression("sensing_mousex")
+
+val BlockHost.mouseY get() =
+    NormalExpression("sensing_mousey")
+
+
+fun BlockHost.setDragMode(dragMode: DragMode) =
+    addBlock(NormalBlock("sensing_setdragmode")
+        .withField("DRAG_MODE", Field.of(dragMode.value)))
+
+
+val BlockHost.loudness get() =
+    NormalExpression("sensing_loudness")
+
+
+val BlockHost.timer get() =
+    NormalExpression("sensing_timer")
+
+fun BlockHost.resetTimer() =
+    addBlock(NormalBlock("sensing_resettimer"))
+
+
+fun BlockHost.propertyOf(sprite: Expression?, property: Property) =
+    NormalExpression("sensing_of")
+        .withExpression("OBJECT", sprite, PropertyTarget.stage)
+        .withField("PROPERTY", property)
+
+fun BlockHost.propertyOf(sprite: Sprite, property: Property) =
+    propertyOf(sprite.propertyTarget, property)
+
+fun BlockHost.propertyOf(sprite: Expression?, property: String) =
+    propertyOf(sprite, Property.of(property))
+
+fun BlockHost.propertyOf(sprite: Sprite, property: String) =
+    propertyOf(sprite.propertyTarget, Property.of(property))
+
+fun BlockHost.propertyOf(sprite: Expression?, property: Variable) =
+    propertyOf(sprite, property.property)
+
+fun BlockHost.propertyOf(sprite: Sprite, property: Variable) =
+    propertyOf(sprite.propertyTarget, property.property)
+
 
 // VLB
 

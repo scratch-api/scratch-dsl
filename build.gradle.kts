@@ -13,6 +13,7 @@ repositories {
 dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.1")
     implementation(kotlin("reflect"))
+    implementation("com.squareup.okhttp3:okhttp:4.12.0")
 }
 
 kotlin {

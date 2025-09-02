@@ -4,15 +4,15 @@ import kotlinx.serialization.json.*
 import java.math.BigInteger
 import java.nio.file.Files
 import java.nio.file.Path
-import java.nio.file.Paths
 import java.security.MessageDigest
-import kotlin.io.path.extension
-
+import kotlin.io.path.*
 
 interface Asset {
     val name: String
     val assetId: String
     val dataFormat: String
+    val path: Path?
+    val data: ByteArray?
     fun JsonObjectBuilder.extraAttributes() {
 
     }
@@ -34,14 +34,16 @@ fun getChecksum(path: Path): String {
 
 internal fun loadCostume(path: Path, name: String): Costume {
     val checksum = getChecksum(path)
-    return Costume(name, path.extension, checksum)
+    return Costume(name, path.extension, checksum, path=path)
 }
 
 data class Costume internal constructor(
     override val name: String,
     override val dataFormat: String,
     override val assetId: String,
-    val rotationCenter: Pair<Double, Double>? = null
+    val rotationCenter: Pair<Double, Double>? = null,
+    override val path: Path? = null,
+    override val data: ByteArray? = null
 ) : Asset, Field, NormalShadowExpression("looks_costume"), ShadowShouldCopy {
     override val fieldValue: Field.Companion.FieldValue = Field.Companion.FieldValue(name)
     override fun JsonObjectBuilder.extraAttributes() {
@@ -60,6 +62,37 @@ data class Costume internal constructor(
 
     override fun makeCopy() =
         copy()
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+
+        other as Costume
+
+        if (name != other.name) return false
+        if (dataFormat != other.dataFormat) return false
+        if (assetId != other.assetId) return false
+        if (rotationCenter != other.rotationCenter) return false
+        if (path != other.path) return false
+        if (data != null) {
+            if (other.data == null) return false
+            if (!data.contentEquals(other.data)) return false
+        } else if (other.data != null) return false
+        if (fieldValue != other.fieldValue) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        var result = name.hashCode()
+        result = 31 * result + dataFormat.hashCode()
+        result = 31 * result + assetId.hashCode()
+        result = 31 * result + (rotationCenter?.hashCode() ?: 0)
+        result = 31 * result + (path?.hashCode() ?: 0)
+        result = 31 * result + (data?.contentHashCode() ?: 0)
+        result = 31 * result + fieldValue.hashCode()
+        return result
+    }
 }
 
 internal fun Costume.asBackdrop() = Backdrop(name)
@@ -120,7 +153,7 @@ data class Comment(
 
 internal fun loadSound(path: Path, name: String): Sound {
     val checksum = getChecksum(path)
-    return Sound(name, path.extension, checksum)
+    return Sound(name, path.extension, checksum, path=path)
 }
 
 data class Sound internal constructor(
@@ -128,8 +161,11 @@ data class Sound internal constructor(
     override val dataFormat: String,
     override val assetId: String,
     val rate: Int? = null,
-    val sampleCount: Int? = null
-) : Asset {
+    val sampleCount: Int? = null,
+    override val path: Path? = null,
+    override val data: ByteArray? = null
+) : Asset, Field, NormalShadowExpression("sound_sounds_menu"), ShadowShouldCopy {
+    override val fieldValue: Field.Companion.FieldValue = Field.Companion.FieldValue("name")
     override fun JsonObjectBuilder.extraAttributes() {
         rate?.let {
             put("rate", it)
@@ -137,5 +173,48 @@ data class Sound internal constructor(
         sampleCount?.let {
             put("sampleCount", it)
         }
+    }
+
+    init {
+        fields["SOUND_MENU"] = this
+    }
+
+    override fun representAlone() =
+        JsonPrimitive(id)
+
+    override fun makeCopy() =
+        copy()
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+
+        other as Sound
+
+        if (name != other.name) return false
+        if (dataFormat != other.dataFormat) return false
+        if (assetId != other.assetId) return false
+        if (rate != other.rate) return false
+        if (sampleCount != other.sampleCount) return false
+        if (path != other.path) return false
+        if (data != null) {
+            if (other.data == null) return false
+            if (!data.contentEquals(other.data)) return false
+        } else if (other.data != null) return false
+        if (fieldValue != other.fieldValue) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        var result = name.hashCode()
+        result = 31 * result + dataFormat.hashCode()
+        result = 31 * result + assetId.hashCode()
+        result = 31 * result + (rate ?: 0)
+        result = 31 * result + (sampleCount ?: 0)
+        result = 31 * result + (path?.hashCode() ?: 0)
+        result = 31 * result + (data?.contentHashCode() ?: 0)
+        result = 31 * result + fieldValue.hashCode()
+        return result
     }
 }
