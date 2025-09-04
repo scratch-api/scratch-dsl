@@ -1,5 +1,7 @@
 package org.scratchapi.scratchdsl
 
+import kotlinx.serialization.json.JsonArrayBuilder
+import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.add
 import kotlinx.serialization.json.buildJsonArray
 
@@ -22,7 +24,7 @@ sealed class VLB(opcode: String?, val name: String, private val variant: VLBVari
         }
 }
 
-class Variable internal constructor(name: String, val sprite: Sprite) : VLB(null, name, VLBVariant.VARIABLE),
+class Variable internal constructor(name: String) : VLB(null, name, VLBVariant.VARIABLE),
     HandlesSet {
 
     override var expressionSetHandler: ((Expression?) -> Block)? = { expression ->
@@ -38,6 +40,28 @@ class Variable internal constructor(name: String, val sprite: Sprite) : VLB(null
     }
 }
 
-class ScratchList internal constructor(name: String, val sprite: Sprite) : VLB(null, name, VLBVariant.LIST)
+class VariableSlot internal constructor(name: String, val value: JsonPrimitive = JsonPrimitive(""), val cloud: Boolean = false) : VLB(null, name, VLBVariant.VARIABLE),
+    HandlesSet {
+
+    override var expressionSetHandler: ((Expression?) -> Block)? = { expression ->
+        NormalBlock("data_setvariableto")
+            .withExpression("VALUE", expression, ValueInput.TEXT.of("0"))
+            .withField("VARIABLE", this)
+    }
+
+    override var expressionChangeHandler: ((Expression?) -> Block)? = { expression ->
+        NormalBlock("data_changevariableby")
+            .withExpression("VALUE", expression, ValueInput.NUMBER.of("1"))
+            .withField("VARIABLE", this)
+    }
+}
+
+class ScratchList internal constructor(name: String) : VLB(null, name, VLBVariant.LIST)
+
+class ScratchListSlot internal constructor(name: String, block: JsonArrayBuilder.() -> Unit) : VLB(null, name, VLBVariant.LIST) {
+    val value = buildJsonArray(block)
+}
 
 class Broadcast internal constructor(name: String) : VLB(null, name, VLBVariant.BROADCAST), ShadowExpression
+
+class BroadcastSlot internal constructor(name: String) : VLB(null, name, VLBVariant.BROADCAST), ShadowExpression

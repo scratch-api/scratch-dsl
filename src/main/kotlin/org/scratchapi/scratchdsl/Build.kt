@@ -57,10 +57,10 @@ interface BlockHost {
         this.expressionChangeHandler?.let {
             addBlock(it(value))
         } ?:
-        this.expressionSetHandler?.let {
+        (this.expressionSetHandler?.let {
             addBlock(it(this + value))
         } ?: (NormalBlock("motion_movesteps")
-            .withExpression("STEPS", shadowExpression = ValueInput.NUMBER.of("0")))
+            .withExpression("STEPS", shadowExpression = ValueInput.NUMBER.of("0"))))
 
 
     infix fun ScratchList.append(value: Expression?) =
@@ -235,6 +235,22 @@ class BuildRoot internal constructor() : Representable<Representation> {
     fun addExtension(extensionRepresentation: Representation) {
         extensions.add(extensionRepresentation)
     }
+
+    fun makeGlobalVar(
+        name: String = IdGenerator.makeRandomId(6),
+        value: JsonPrimitive = JsonPrimitive(""),
+        cloud: Boolean = false
+    ) =
+        stage.makeVar(name, value, cloud)
+
+    fun makeGlobalList(
+        name: String = IdGenerator.makeRandomId(6),
+        block: JsonArrayBuilder.() -> Unit
+    ) =
+        stage.makeList(name, block)
+
+    fun makeBroadcast(name: String = IdGenerator.makeRandomId(6)) =
+        stage.makeBroadcast(name)
 }
 
 val httpClient = OkHttpClient()
@@ -413,7 +429,7 @@ class SpriteBuilder internal constructor(val root: BuildRoot) : HatBlockHost, Re
         name: String = IdGenerator.makeRandomId(6),
         value: JsonPrimitive = JsonPrimitive(""),
         cloud: Boolean = false
-    ) = Variable(if (shouldScrambleNames) IdGenerator.makeRandomId(6) else name, this).apply {
+    ) = Variable(if (shouldScrambleNames) IdGenerator.makeRandomId(6) else name).apply {
         if (this.name in variables || this.name in root.globalVariables) {
             throw IllegalArgumentException("This name is already used.")
         }
@@ -422,14 +438,19 @@ class SpriteBuilder internal constructor(val root: BuildRoot) : HatBlockHost, Re
 
     fun makeList(
         name: String = IdGenerator.makeRandomId(6),
-        block: JsonArrayBuilder.() -> Unit
-    ) = ScratchList(if (shouldScrambleNames) IdGenerator.makeRandomId(6) else name, this).apply {
+        jsonArray: JsonArray
+    ) = ScratchList(if (shouldScrambleNames) IdGenerator.makeRandomId(6) else name).apply {
 
         if (this.name in lists || this.name in root.globalLists) {
             throw IllegalArgumentException("This name is already used.")
         }
-        lists[this.name] = this to buildJsonArray(block)
+        lists[this.name] = this to jsonArray
     }
+
+    fun makeList(
+        name: String = IdGenerator.makeRandomId(6),
+        block: JsonArrayBuilder.() -> Unit
+    ) = makeList(name, buildJsonArray(block))
 
 
     fun makeLocalBroadcast(
@@ -440,6 +461,21 @@ class SpriteBuilder internal constructor(val root: BuildRoot) : HatBlockHost, Re
         }
         broadcasts[this.name] = this
     }
+
+    fun makeVar(variableSlot: VariableSlot) =
+        makeVar(variableSlot.name, variableSlot.value, variableSlot.cloud).apply {
+            id = variableSlot.id
+        }
+
+    fun makeList(listSlot: ScratchListSlot) =
+        makeList(listSlot.name, listSlot.value).apply {
+            id = listSlot.id
+        }
+
+    fun makeBroadcast(broadcastSlot: BroadcastSlot) =
+        makeLocalBroadcast(broadcastSlot.name).apply {
+            id = broadcastSlot.id
+        }
 
     fun scrambleLocalNamesAfter() {
         shouldScrambleNames = true
