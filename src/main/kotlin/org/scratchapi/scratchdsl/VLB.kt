@@ -1,9 +1,6 @@
 package org.scratchapi.scratchdsl
 
-import kotlinx.serialization.json.JsonArrayBuilder
-import kotlinx.serialization.json.JsonPrimitive
-import kotlinx.serialization.json.add
-import kotlinx.serialization.json.buildJsonArray
+import kotlinx.serialization.json.*
 
 internal enum class VLBVariant(val numericType: Int) {
     VARIABLE(12),
@@ -58,8 +55,8 @@ class VariableSlot internal constructor(name: String, val value: JsonPrimitive =
 
 class ScratchList internal constructor(name: String) : VLB(null, name, VLBVariant.LIST)
 
-class ScratchListSlot internal constructor(name: String, block: JsonArrayBuilder.() -> Unit) : VLB(null, name, VLBVariant.LIST) {
-    val value = buildJsonArray(block)
+class ScratchListSlot internal constructor(name: String, val value: JsonArray) : VLB(null, name, VLBVariant.LIST) {
+    internal constructor(name: String, block: JsonArrayBuilder.() -> Unit) : this(name, buildJsonArray(block))
 }
 
 class Broadcast internal constructor(name: String) : VLB(null, name, VLBVariant.BROADCAST), ShadowExpression

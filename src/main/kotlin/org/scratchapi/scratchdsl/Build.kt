@@ -245,12 +245,40 @@ class BuildRoot internal constructor() : Representable<Representation> {
 
     fun makeGlobalList(
         name: String = IdGenerator.makeRandomId(6),
+        value: JsonArray
+    ) =
+        stage.makeList(name, value)
+
+    fun makeGlobalList(
+        name: String = IdGenerator.makeRandomId(6),
         block: JsonArrayBuilder.() -> Unit
     ) =
         stage.makeList(name, block)
 
     fun makeBroadcast(name: String = IdGenerator.makeRandomId(6)) =
         stage.makeBroadcast(name)
+
+    fun makeLocalVarSlot(
+        name: String = IdGenerator.makeRandomId(6),
+        value: JsonPrimitive = JsonPrimitive(""),
+        cloud: Boolean = false
+    ) =
+        VariableSlot(name, value, cloud)
+
+    fun makeLocalListSlot(
+        name: String = IdGenerator.makeRandomId(6),
+        value: JsonArray
+    ) =
+        ScratchListSlot(name, value)
+
+    fun makeLocalListSlot(
+        name: String = IdGenerator.makeRandomId(6),
+        block: JsonArrayBuilder.() -> Unit
+    ) =
+        ScratchListSlot(name, block)
+
+    fun makeLocalBroadcastSlot(name: String = IdGenerator.makeRandomId(6)) =
+        BroadcastSlot(name)
 }
 
 val httpClient = OkHttpClient()
@@ -282,6 +310,11 @@ class StageBuilder internal constructor(root: BuildRoot) : HatBlockHost {
         value: JsonPrimitive = JsonPrimitive(""),
         cloud: Boolean = false
     ) = spriteBuilder.makeVar(name, value, cloud)
+
+    fun makeList(
+        name: String = IdGenerator.makeRandomId(6),
+        value: JsonArray
+    ) = spriteBuilder.makeList(name, value)
 
     fun makeList(
         name: String = IdGenerator.makeRandomId(6),
