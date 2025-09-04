@@ -410,6 +410,26 @@ val rotation get() =
 
 // Looks
 
+fun BlockHost.sayForSecs(message: Expression?, secs: Expression?) =
+    addBlock(NormalBlock("looks_sayforsecs")
+        .withExpression("MESSAGE", message, ValueInput.TEXT.of("Hello!"))
+        .withExpression("SECS", secs, ValueInput.NUMBER.of("2")))
+
+fun BlockHost.say(message: Expression?) =
+    addBlock(NormalBlock("looks_say")
+        .withExpression("MESSAGE", message, ValueInput.TEXT.of("Hello!"))
+    )
+
+fun BlockHost.thinkForSecs(message: Expression?, secs: Expression?) =
+    addBlock(NormalBlock("looks_thinkforsecs")
+        .withExpression("MESSAGE", message, ValueInput.TEXT.of("Hmm..."))
+        .withExpression("SECS", secs, ValueInput.NUMBER.of("2")))
+
+fun BlockHost.think(message: Expression?) =
+    addBlock(NormalBlock("looks_think")
+        .withExpression("MESSAGE", message, ValueInput.TEXT.of("Hmm...")))
+
+
 fun BlockHost.switchToCostume(costume: Expression?) =
     addBlock(
         NormalBlock("looks_switchcostumeto")
@@ -1042,9 +1062,10 @@ fun BlockHost.hideList(list: ScratchList) =
 
 // My Blocks
 
-class ProcedurePrototypeBuilder(name: String) {
+class ProcedurePrototypeBuilder(name: String, val warp: Boolean) {
     internal val arguments = mutableListOf<ProcedureArgument>()
     internal var proccode = name
+    internal var proc: Procedure? = null
     fun stringNumber(name: String, default: String = ""): ProcedureArgumentStringNumber {
         proccode += " %s"
         val argument = ProcedureArgumentStringNumber(name, default)
@@ -1063,14 +1084,19 @@ class ProcedurePrototypeBuilder(name: String) {
     }
 }
 
-fun procedure(name: String, warp: Boolean = false, block: ProcedurePrototypeBuilder.() -> Unit): ProcedurePrototype {
-    val builder = ProcedurePrototypeBuilder(name).apply(block)
-    return ProcedurePrototype(builder.proccode, warp, builder.arguments)
+fun HatBlockHost.procedure(name: String, warp: Boolean = false, block: ProcedurePrototypeBuilder.() -> Unit): Lazy<Procedure> {
+    return lazy {
+        val builder = ProcedurePrototypeBuilder(name, warp).apply(block)
+        builder.proc?.let {
+            return@lazy it
+        }
+        builder.impl { }
+    }
 }
 
 internal fun HatBlockHost.makeProcedureDefinition(prototype: ProcedurePrototype, block: BlockHost.() -> Unit): HatBlock {
     val hatBlock = NormalHatBlock("procedures_definition")
-        .withExpression("custom_block", prototype)
+        .withExpression("custom_block", null, prototype)
     hatBlock.blockStack.block()
     return addHatBlock(hatBlock)
 }

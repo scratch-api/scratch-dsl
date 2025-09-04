@@ -30,12 +30,13 @@ interface Flattenable {
 interface HatBlockHost {
     fun<B: HatBlock> addHatBlock(hatBlock: B): B
 
-
-    infix fun ProcedurePrototype.impl(block: BlockHost.() -> Unit): Lazy<Procedure> {
-        makeProcedureDefinition(this, block)
-        return lazy {
-            Procedure(this)
-        }
+    fun ProcedurePrototypeBuilder.impl(block: BlockHost.() -> Unit): Procedure {
+        val procedurePrototype = ProcedurePrototype(proccode, warp, arguments)
+        makeProcedureDefinition(procedurePrototype, block)
+        return Procedure(procedurePrototype)
+            .apply {
+                proc = this
+            }
     }
 }
 

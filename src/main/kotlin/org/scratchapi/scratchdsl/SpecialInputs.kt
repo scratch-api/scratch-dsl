@@ -339,12 +339,7 @@ class ProcedureArgumentBoolean internal constructor(override val name: String, o
         JsonPrimitive(id)
 }
 
-// fun BlockHost.name() =
-//    addBlock(NormalBlock("procedures_definition")
-//        .withExpression("custom_block", custom_block, null) // [1, 'a'] // {'opcode': 'procedures_prototype', 'next': None, 'parent': 'b', 'inputs': {'vqC/4Z]x5gX16w*m?4A)': [1, 'c'], 'J[ilS?#g*?MZ$$4$3/h,': [3, None, 'd'], 'N3K$`Nivlsp{_dK*U$s|': [1, 'e']}, 'fields': {}, 'shadow': True, 'topLevel': False, 'mutation': {'tagName': 'mutation', 'children': [], 'proccode': 'a %s %b aw', 'argumentids': '["vqC/4Z]x5gX16w*m?4A)","N3K$`Nivlsp{_dK*U$s|"]', 'argumentnames': '["a","boolean"]', 'argumentdefaults': '["","","false"]', 'warp': 'false'}}
-//    )
-
-class ProcedurePrototype internal constructor(val proccode: String, val warp: Boolean, val arguments: List<ProcedureArgument>) : NormalExpression("procedures_prototype") {
+class ProcedurePrototype internal constructor(val proccode: String, val warp: Boolean, val arguments: List<ProcedureArgument>) : NormalExpression("procedures_prototype"), ShadowExpression {
     init {
         shadow = true
         arguments.forEach { argument ->
