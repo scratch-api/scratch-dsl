@@ -1068,15 +1068,15 @@ class ProcedurePrototypeBuilder(name: String, val warp: Boolean) {
     internal var proc: Procedure? = null
     fun stringNumber(name: String, default: String = ""): ProcedureArgumentStringNumber {
         proccode += " %s"
-        val argument = ProcedureArgumentStringNumber(name, default)
+        val argument = ProcedureArgumentStringNumberShadow(name, default)
         arguments.add(argument)
-        return argument
+        return ProcedureArgumentStringNumber(name, default, argument.argumentId)
     }
     fun boolean(name: String, default: String = "false"): ProcedureArgumentBoolean {
         proccode += " %b"
-        val argument = ProcedureArgumentBoolean(name, default)
+        val argument = ProcedureArgumentBooleanShadow(name, default)
         arguments.add(argument)
-        return argument
+        return ProcedureArgumentBoolean(name, default, argument.argumentId)
     }
     fun text(text: String) {
         proccode += " "

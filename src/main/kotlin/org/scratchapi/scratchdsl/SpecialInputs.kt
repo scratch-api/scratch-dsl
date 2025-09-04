@@ -319,7 +319,10 @@ sealed interface ProcedureArgument : ShadowExpression {
     val argumentId: String
 }
 
-class ProcedureArgumentStringNumber internal constructor(override val name: String, override val default: String = "") : ProcedureArgument, NormalShadowExpression("argument_reporter_string_number") {
+class ProcedureArgumentStringNumberShadow internal constructor(
+    override val name: String,
+    override val default: String = ""
+) : ProcedureArgument, NormalShadowExpression("argument_reporter_string_number") {
     override val argumentId = IdGenerator.makeRandomId(6)
     init {
         fields["VALUE"] = Field.of(name)
@@ -329,7 +332,10 @@ class ProcedureArgumentStringNumber internal constructor(override val name: Stri
         JsonPrimitive(id)
 }
 
-class ProcedureArgumentBoolean internal constructor(override val name: String, override val default: String = "false") : ProcedureArgument, NormalShadowExpression("argument_reporter_boolean") {
+class ProcedureArgumentBooleanShadow internal constructor(
+    override val name: String,
+    override val default: String = "false"
+) : ProcedureArgument, NormalShadowExpression("argument_reporter_boolean") {
     override val argumentId = IdGenerator.makeRandomId(6)
     init {
         fields["VALUE"] = Field.of(name)
@@ -337,6 +343,28 @@ class ProcedureArgumentBoolean internal constructor(override val name: String, o
 
     override fun representAlone() =
         JsonPrimitive(id)
+}
+
+class ProcedureArgumentStringNumber internal constructor(
+    override val name: String,
+    override val default: String = "",
+    override val argumentId: String = IdGenerator.makeRandomId(6)
+) : ProcedureArgument, NormalExpression("argument_reporter_string_number") {
+
+    init {
+        fields["VALUE"] = Field.of(name)
+    }
+}
+
+class ProcedureArgumentBoolean internal constructor(
+    override val name: String,
+    override val default: String = "false",
+    override val argumentId: String = IdGenerator.makeRandomId(6)
+) : ProcedureArgument, NormalExpression("argument_reporter_boolean") {
+
+    init {
+        fields["VALUE"] = Field.of(name)
+    }
 }
 
 class ProcedurePrototype internal constructor(val proccode: String, val warp: Boolean, val arguments: List<ProcedureArgument>) : NormalExpression("procedures_prototype"), ShadowExpression {

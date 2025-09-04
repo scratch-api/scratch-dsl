@@ -86,10 +86,10 @@ interface BlockHost {
             .withMutation("proccode", JsonPrimitive(procedurePrototype.proccode))
             .withMutation("warp", JsonPrimitive(Json.encodeToString(procedurePrototype.warp)))
         procedurePrototype.arguments.forEach { argument ->
-            if (argument is ProcedureArgumentStringNumber) block.withExpression(argument.argumentId, null, ValueInput.TEXT.of(""))
+            if (argument is ProcedureArgumentStringNumberShadow) block.withExpression(argument.argumentId, null, ValueInput.TEXT.of(""))
         }
         procedurePrototype.arguments.zip(arguments).forEach { (argument, expr) ->
-            if (argument is ProcedureArgumentStringNumber) {
+            if (argument is ProcedureArgumentStringNumberShadow) {
                 block.withExpression(argument.argumentId, expr, ValueInput.TEXT.of(""))
             } else {
                 block.withExpression(argument.argumentId, expr)
