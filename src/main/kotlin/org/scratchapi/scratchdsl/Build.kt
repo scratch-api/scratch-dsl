@@ -279,6 +279,19 @@ class BuildRoot internal constructor() : Representable<Representation> {
 
     fun makeLocalBroadcastSlot(name: String = IdGenerator.makeRandomId(6)) =
         BroadcastSlot(name)
+
+    fun addBackdrop(
+        name: String,
+        dataFormat: String,
+        assetId: String,
+        rotationCenter: Pair<Double, Double>? = null,
+        path: Path? = null
+    ) = stage.addBackdrop(name, dataFormat, assetId, rotationCenter, path)
+
+    fun addBackdrop(
+        path: Path,
+        name: String
+    ) = stage.addBackdrop(path, name)
 }
 
 val httpClient = OkHttpClient()

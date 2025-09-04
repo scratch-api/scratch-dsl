@@ -783,10 +783,10 @@ fun BlockHost.propertyOf(sprite: Expression?, property: String) =
 fun BlockHost.propertyOf(sprite: Sprite, property: String) =
     propertyOf(sprite.propertyTarget, Property.of(property))
 
-fun BlockHost.propertyOf(sprite: Expression?, property: Variable) =
+fun BlockHost.propertyOf(sprite: Expression?, property: VariableLike) =
     propertyOf(sprite, property.property)
 
-fun BlockHost.propertyOf(sprite: Sprite, property: Variable) =
+fun BlockHost.propertyOf(sprite: Sprite, property: VariableLike) =
     propertyOf(sprite.propertyTarget, property.property)
 
 

@@ -15,7 +15,7 @@ val SpriteBuilder.distanceObject get() = DistanceObject.of(name)
 
 val SpriteBuilder.propertyTarget get() = PropertyTarget.of(name)
 
-val Variable.property get() = Property.of(name)
+val VariableLike.property get() = Property.of(name)
 
 val KeyboardKey.sensingKey get() = SensingKey.of(this)
 

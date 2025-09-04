@@ -21,8 +21,13 @@ sealed class VLB(opcode: String?, val name: String, private val variant: VLBVari
         }
 }
 
-class Variable internal constructor(name: String) : VLB(null, name, VLBVariant.VARIABLE),
-    HandlesSet {
+sealed interface VariableLike {
+    val name: String
+}
+
+class Variable internal constructor(
+    name: String
+) : VLB(null, name, VLBVariant.VARIABLE), HandlesSet, VariableLike {
 
     override var expressionSetHandler: ((Expression?) -> Block)? = { expression ->
         NormalBlock("data_setvariableto")
@@ -37,8 +42,11 @@ class Variable internal constructor(name: String) : VLB(null, name, VLBVariant.V
     }
 }
 
-class VariableSlot internal constructor(name: String, val value: JsonPrimitive = JsonPrimitive(""), val cloud: Boolean = false) : VLB(null, name, VLBVariant.VARIABLE),
-    HandlesSet {
+class VariableSlot internal constructor(
+    name: String,
+    val value: JsonPrimitive = JsonPrimitive(""),
+    val cloud: Boolean = false
+) : VLB(null, name, VLBVariant.VARIABLE), HandlesSet, VariableLike {
 
     override var expressionSetHandler: ((Expression?) -> Block)? = { expression ->
         NormalBlock("data_setvariableto")
