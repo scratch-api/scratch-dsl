@@ -1,7 +1,8 @@
 @file:Suppress("unused")
 
-package de.thecommcraft.scratchdsl.build
+package de.thecommcraft.scratchdsl
 
+import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.*
 import java.nio.file.Path
 import kotlin.random.Random
@@ -28,6 +29,14 @@ interface Flattenable {
 
 interface HatBlockHost {
     fun<B: HatBlock> addHatBlock(hatBlock: B): B
+
+
+    infix fun ProcedurePrototype.impl(block: BlockHost.() -> Unit): Lazy<Procedure> {
+        makeProcedureDefinition(this, block)
+        return lazy {
+            Procedure(this)
+        }
+    }
 }
 
 interface BlockHost {
@@ -64,6 +73,26 @@ interface BlockHost {
 
     fun ScratchList.insertAtIndex(value: Expression?, index: Expression?) =
         this@BlockHost.insertAtIndex(this, value, index)
+
+    fun Procedure.call(vararg arguments: Expression?): NormalBlock {
+        val block = NormalBlock("procedures_call")
+            .withDefaultMutation()
+            .withMutation("argumentids", JsonPrimitive(Json.encodeToString(buildJsonArray {
+                this@call.procedurePrototype.arguments.forEach { argument ->
+                    add(argument.argumentId)
+                }
+            })))
+            .withMutation("proccode", JsonPrimitive(procedurePrototype.proccode))
+            .withMutation("warp", JsonPrimitive(Json.encodeToString(procedurePrototype.warp)))
+        procedurePrototype.arguments.zip(arguments).forEach { (argument, expr) ->
+            if (argument is ProcedureArgumentStringNumber) {
+                block.withExpression(argument.argumentId, expr, ValueInput.TEXT.of(""))
+            } else {
+                block.withExpression(argument.argumentId, expr)
+            }
+        }
+        return addBlock(block)
+    }
 }
 
 interface Representable<R: Representation> {
@@ -106,8 +135,7 @@ class BlockStack(myId: String = IdGenerator.makeId(), val contents: MutableList<
         contents.forEach {
             previous?.next = it
             previous = it
-            it.parent = parentId
-            it.flattenInto(map)
+            it.flattenInto(map, parentId)
         }
     }
 
@@ -451,7 +479,11 @@ class SpriteBuilder internal constructor(val root: BuildRoot) : HatBlockHost, Re
 typealias Sprite = SpriteBuilder
 
 fun build(block: BuildRoot.() -> Unit) =
-    BuildRoot().apply(block).represent()
+    BuildRoot().apply(block)
+
+fun BuildRoot.encode() = Json.encodeToString(represent())
+
+fun String.output() = println(this)
 
 object IdGenerator {
     const val ALLOWED_CHARS = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"

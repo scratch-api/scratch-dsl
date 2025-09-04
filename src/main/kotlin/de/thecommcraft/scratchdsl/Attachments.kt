@@ -1,4 +1,4 @@
-package de.thecommcraft.scratchdsl.build
+package de.thecommcraft.scratchdsl
 
 import kotlinx.serialization.json.*
 import java.math.BigInteger
@@ -34,7 +34,7 @@ fun getChecksum(path: Path): String {
 
 internal fun loadCostume(path: Path, name: String): Costume {
     val checksum = getChecksum(path)
-    return Costume(name, path.extension, checksum, path=path)
+    return Costume(name, path.extension, checksum, path = path)
 }
 
 data class Costume internal constructor(
@@ -154,7 +154,7 @@ data class Comment(
 
 internal fun loadSound(path: Path, name: String): Sound {
     val checksum = getChecksum(path)
-    return Sound(name, path.extension, checksum, path=path)
+    return Sound(name, path.extension, checksum, path = path)
 }
 
 data class Sound internal constructor(

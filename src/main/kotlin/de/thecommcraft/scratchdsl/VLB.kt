@@ -1,9 +1,7 @@
-package de.thecommcraft.scratchdsl.build
+package de.thecommcraft.scratchdsl
 
 import kotlinx.serialization.json.add
 import kotlinx.serialization.json.buildJsonArray
-import kotlinx.serialization.json.buildJsonObject
-import kotlinx.serialization.json.put
 
 internal enum class VLBVariant(val numericType: Int) {
     VARIABLE(12),

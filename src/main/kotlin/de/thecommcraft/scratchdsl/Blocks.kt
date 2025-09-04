@@ -1,6 +1,6 @@
 @file:Suppress("unused")
 
-package de.thecommcraft.scratchdsl.build
+package de.thecommcraft.scratchdsl
 
 import kotlinx.serialization.json.*
 
@@ -28,16 +28,17 @@ open class NormalBlock internal constructor(override val opcode: String?) : Bloc
         set(value) { myId = value }
 
     override fun flattenInto(map: MutableMap<String, AnyBlock>, parentId: String?) {
+        parent = parentId
         map[id] = this
         shadowlessExpressionInputs.forEach { (_, u) ->
             if (u == null) return@forEach
-            if (u.independent) u.flattenInto(map)
+            if (u.independent) u.flattenInto(map, id)
         }
         expressionInputs.forEach { (_, u) ->
             if (u == null) return@forEach
             val (s, e) = u
-            if (s.independent) s.flattenInto(map)
-            if (e?.independent == true) e.flattenInto(map)
+            if (s.independent) s.flattenInto(map, id)
+            if (e?.independent == true) e.flattenInto(map, id)
         }
         blockStackInputs.forEach { (_, u) ->
             if (u == null) return@forEach
@@ -989,3 +990,37 @@ fun BlockHost.hideList(list: ScratchList) =
     addBlock(NormalBlock("data_hidelist")
         .withField("LIST", list))
 
+// My Blocks
+
+class ProcedurePrototypeBuilder(name: String) {
+    internal val arguments = mutableListOf<ProcedureArgument>()
+    internal var proccode = name
+    fun stringNumber(name: String, default: String = ""): ProcedureArgumentStringNumber {
+        proccode += " %s"
+        val argument = ProcedureArgumentStringNumber(name, default)
+        arguments.add(argument)
+        return argument
+    }
+    fun boolean(name: String, default: String = "false"): ProcedureArgumentBoolean {
+        proccode += " %b"
+        val argument = ProcedureArgumentBoolean(name, default)
+        arguments.add(argument)
+        return argument
+    }
+    fun text(text: String) {
+        proccode += " "
+        proccode += text
+    }
+}
+
+fun procedure(name: String, warp: Boolean = false, block: ProcedurePrototypeBuilder.() -> Unit): ProcedurePrototype {
+    val builder = ProcedurePrototypeBuilder(name).apply(block)
+    return ProcedurePrototype(builder.proccode, warp, builder.arguments)
+}
+
+internal fun HatBlockHost.makeProcedureDefinition(prototype: ProcedurePrototype, block: BlockHost.() -> Unit): HatBlock {
+    val hatBlock = NormalHatBlock("procedures_definition")
+        .withExpression("custom_block", prototype)
+    hatBlock.blockStack.block()
+    return addHatBlock(hatBlock)
+}

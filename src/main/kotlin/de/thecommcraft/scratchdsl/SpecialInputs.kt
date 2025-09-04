@@ -1,8 +1,9 @@
 @file:Suppress("unused")
 
-package de.thecommcraft.scratchdsl.build
+package de.thecommcraft.scratchdsl
 
-import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.*
 
 val SpriteBuilder.specialLocation get() = SpecialLocation.of(name)
 
@@ -312,3 +313,65 @@ enum class TimeUnit(val value: String) {
     SECOND("SECOND")
 }
 
+sealed interface ProcedureArgument : ShadowExpression {
+    val name: String
+    val default: String
+    val argumentId: String
+}
+
+class ProcedureArgumentStringNumber internal constructor(override val name: String, override val default: String = "") : ProcedureArgument, NormalShadowExpression("argument_reporter_string_number") {
+    override val argumentId = IdGenerator.makeRandomId(6)
+    init {
+        fields["VALUE"] = Field.of(name)
+    }
+
+    override fun representAlone() =
+        JsonPrimitive(id)
+}
+
+class ProcedureArgumentBoolean internal constructor(override val name: String, override val default: String = "false") : ProcedureArgument, NormalShadowExpression("argument_reporter_boolean") {
+    override val argumentId = IdGenerator.makeRandomId(6)
+    init {
+        fields["VALUE"] = Field.of(name)
+    }
+
+    override fun representAlone() =
+        JsonPrimitive(id)
+}
+
+// fun BlockHost.name() =
+//    addBlock(NormalBlock("procedures_definition")
+//        .withExpression("custom_block", custom_block, null) // [1, 'a'] // {'opcode': 'procedures_prototype', 'next': None, 'parent': 'b', 'inputs': {'vqC/4Z]x5gX16w*m?4A)': [1, 'c'], 'J[ilS?#g*?MZ$$4$3/h,': [3, None, 'd'], 'N3K$`Nivlsp{_dK*U$s|': [1, 'e']}, 'fields': {}, 'shadow': True, 'topLevel': False, 'mutation': {'tagName': 'mutation', 'children': [], 'proccode': 'a %s %b aw', 'argumentids': '["vqC/4Z]x5gX16w*m?4A)","N3K$`Nivlsp{_dK*U$s|"]', 'argumentnames': '["a","boolean"]', 'argumentdefaults': '["","","false"]', 'warp': 'false'}}
+//    )
+
+class ProcedurePrototype internal constructor(val proccode: String, val warp: Boolean, val arguments: List<ProcedureArgument>) : NormalExpression("procedures_prototype") {
+    init {
+        shadow = true
+        arguments.forEach { argument ->
+            shadowlessExpressionInputs[argument.id] = argument
+        }
+        mutation["tagName"] = JsonPrimitive("mutation")
+        mutation["children"] = buildJsonArray {  }
+        mutation["proccode"] = JsonPrimitive(proccode)
+        mutation["argumentids"] = JsonPrimitive(Json.encodeToString(buildJsonArray {
+            arguments.forEach { argument ->
+                add(argument.argumentId)
+            }
+        }))
+        mutation["argumentnames"] = JsonPrimitive(Json.encodeToString(buildJsonArray {
+            arguments.forEach { argument ->
+                add(argument.name)
+            }
+        }))
+        mutation["argumentdefaults"] = JsonPrimitive(Json.encodeToString(buildJsonArray {
+            arguments.forEach { argument ->
+                add(argument.default)
+            }
+        }))
+        mutation["warp"] = JsonPrimitive(Json.encodeToString(warp))
+    }
+}
+
+class Procedure internal constructor(
+    val procedurePrototype: ProcedurePrototype
+)

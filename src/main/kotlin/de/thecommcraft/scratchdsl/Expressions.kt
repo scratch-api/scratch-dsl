@@ -1,6 +1,6 @@
 @file:Suppress("unused")
 
-package de.thecommcraft.scratchdsl.build
+package de.thecommcraft.scratchdsl
 
 import kotlinx.serialization.json.*
 
