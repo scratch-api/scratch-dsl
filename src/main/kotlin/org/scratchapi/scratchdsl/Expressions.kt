@@ -1,6 +1,6 @@
 @file:Suppress("unused")
 
-package de.thecommcraft.scratchdsl
+package org.scratchapi.scratchdsl
 
 import kotlinx.serialization.json.*
 
@@ -87,7 +87,8 @@ class HandlesSetNormalBinaryOp(
     expressionBInputName: String = "NUM2",
     shadowExpressionA: ShadowExpression? = null,
     shadowExpressionB: ShadowExpression? = null
-) : NormalBinaryOp(opcode, expressionA, expressionB, expressionAInputName, expressionBInputName, shadowExpressionA, shadowExpressionB), HandlesSet {
+) : NormalBinaryOp(opcode, expressionA, expressionB, expressionAInputName, expressionBInputName, shadowExpressionA, shadowExpressionB),
+    HandlesSet {
     override var expressionSetHandler: ((Expression?) -> Block)? = null
     override var expressionChangeHandler: ((Expression?) -> Block)? = null
 }

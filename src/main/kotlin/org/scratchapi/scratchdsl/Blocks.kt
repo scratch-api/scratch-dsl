@@ -1,6 +1,6 @@
 @file:Suppress("unused")
 
-package de.thecommcraft.scratchdsl
+package org.scratchapi.scratchdsl
 
 import kotlinx.serialization.json.*
 
@@ -181,7 +181,8 @@ fun Expression.changeShadowOpcode(opcode: String?): Expression {
     return this
 }
 
-open class NormalBlockBlockHost internal constructor(opcode: String?, val subStack: BlockStack?) : NormalBlock(opcode), BlockBlockHost {
+open class NormalBlockBlockHost internal constructor(opcode: String?, val subStack: BlockStack?) : NormalBlock(opcode),
+    BlockBlockHost {
     val blocks = mutableListOf<AnyBlock>()
 
     init {
@@ -227,7 +228,8 @@ class NormalHatBlock internal constructor(opcode: String?) : NormalBlock(opcode)
 }
 
 class IsolatedBlockStackHat internal constructor(val blockStack: BlockStack) : HatBlock {
-    private val actualBlock: AnyBlock get() {
+    private val actualBlock: AnyBlock
+        get() {
         if (blockStack.contents.size == 0) throw IllegalStateException("You need to add blocks to the BlockStack before doing that.")
         return blockStack.contents[0]
     }
@@ -289,63 +291,76 @@ fun HatBlockHost.isolated(block: BlockHost.() -> Unit): HatBlock {
 // Motion
 
 fun BlockHost.moveSteps(steps: Expression?) =
-    addBlock(NormalBlock("motion_movesteps")
+    addBlock(
+        NormalBlock("motion_movesteps")
         .withExpression("STEPS", steps, ValueInput.NUMBER.of("10"))
     )
 
 fun BlockHost.turnRight(degrees: Expression?) =
-    addBlock(NormalBlock("motion_turnright")
+    addBlock(
+        NormalBlock("motion_turnright")
         .withExpression("DEGREES", degrees, ValueInput.NUMBER.of("15")))
 
 fun BlockHost.turnLeft(degrees: Expression?) =
-    addBlock(NormalBlock("motion_turnleft")
+    addBlock(
+        NormalBlock("motion_turnleft")
         .withExpression("DEGREES", degrees, ValueInput.NUMBER.of("15")))
 
 
 fun BlockHost.gotoLocation(to: Expression?) =
-    addBlock(NormalBlock("motion_goto")
+    addBlock(
+        NormalBlock("motion_goto")
         .withExpression("TO", to?.changeShadowOpcode("motion_goto_menu"), SpecialLocation.random))
 
 fun BlockHost.gotoXY(x: Expression?, y: Expression?) =
-    addBlock(NormalBlock("motion_gotoxy")
+    addBlock(
+        NormalBlock("motion_gotoxy")
         .withExpression("X", x, ValueInput.NUMBER.of("0"))
         .withExpression("Y", y, ValueInput.NUMBER.of("0")))
 
 fun BlockHost.glideToLocation(to: Expression?, secs: Expression?) =
-    addBlock(NormalBlock("motion_glideto")
+    addBlock(
+        NormalBlock("motion_glideto")
         .withExpression("SECS", secs, ValueInput.NUMBER.of("1"))
         .withExpression("TO", to?.changeShadowOpcode("motion_glideto_menu"), null))
 
 fun BlockHost.glideToXY(x: Expression?, y: Expression?, secs: Expression?) =
-    addBlock(NormalBlock("motion_glidesecstoxy")
+    addBlock(
+        NormalBlock("motion_glidesecstoxy")
         .withExpression("SECS", secs, ValueInput.NUMBER.of("1"))
         .withExpression("X", x, ValueInput.NUMBER.of("0"))
         .withExpression("Y", y, ValueInput.NUMBER.of("0")))
 
 
 fun BlockHost.pointInDirection(direction: Expression?) =
-    addBlock(NormalBlock("motion_pointindirection")
+    addBlock(
+        NormalBlock("motion_pointindirection")
         .withExpression("DIRECTION", direction, ValueInput.ANGLE.of("90")))
 
 fun BlockHost.pointTowards(towards: Expression?) =
-    addBlock(NormalBlock("motion_pointtowards")
+    addBlock(
+        NormalBlock("motion_pointtowards")
         .withExpression("TOWARDS", towards?.changeShadowOpcode("motion_pointtowards_menu"), null))
 
 
 fun BlockHost.changeXBy(dx: Expression?) =
-    addBlock(NormalBlock("motion_changexby")
+    addBlock(
+        NormalBlock("motion_changexby")
         .withExpression("DX", dx, ValueInput.NUMBER.of("10")))
 
 fun BlockHost.setXTo(x: Expression?) =
-    addBlock(NormalBlock("motion_setx")
+    addBlock(
+        NormalBlock("motion_setx")
         .withExpression("X", x, ValueInput.NUMBER.of("0")))
 
 fun BlockHost.changeYBy(dy: Expression?) =
-    addBlock(NormalBlock("motion_changeyby")
+    addBlock(
+        NormalBlock("motion_changeyby")
         .withExpression("DY", dy, ValueInput.NUMBER.of("10")))
 
 fun BlockHost.setYTo(y: Expression?) =
-    addBlock(NormalBlock("motion_sety")
+    addBlock(
+        NormalBlock("motion_sety")
         .withExpression("Y", y, ValueInput.NUMBER.of("0")))
 
 
@@ -354,7 +369,8 @@ fun BlockHost.ifOnEdgeBounce() =
 
 
 fun BlockHost.setRotationStyle(rotationStyle: RotationStyle) =
-    addBlock(NormalBlock("motion_setrotationstyle")
+    addBlock(
+        NormalBlock("motion_setrotationstyle")
         .withField("STYLE", Field.of(rotationStyle.value)))
 
 
@@ -395,14 +411,16 @@ val rotation get() =
 // Looks
 
 fun BlockHost.switchToCostume(costume: Expression?) =
-    addBlock(NormalBlock("looks_switchcostumeto")
+    addBlock(
+        NormalBlock("looks_switchcostumeto")
         .withExpression("COSTUME", costume, FirstSprite))
 
 fun BlockHost.switchToNextCostume() =
     addBlock(NormalBlock("looks_nextcostume"))
 
 fun BlockHost.switchToBackdrop(backdrop: Expression?) =
-    addBlock(NormalBlock("looks_switchbackdropto")
+    addBlock(
+        NormalBlock("looks_switchbackdropto")
         .withExpression("BACKDROP", backdrop.asBackdrop(), FirstBackdrop))
 
 fun BlockHost.switchToNextBackdrop() =
@@ -410,21 +428,25 @@ fun BlockHost.switchToNextBackdrop() =
 
 
 fun BlockHost.changeSizeBy(change: Expression?) =
-    addBlock(NormalBlock("looks_changesizeby")
+    addBlock(
+        NormalBlock("looks_changesizeby")
         .withExpression("CHANGE", change, ValueInput.NUMBER.of("10")))
 
 fun BlockHost.setSizeTo(size: Expression?) =
-    addBlock(NormalBlock("looks_setsizeto")
+    addBlock(
+        NormalBlock("looks_setsizeto")
         .withExpression("SIZE", size, ValueInput.NUMBER.of("100")))
 
 
 fun BlockHost.changeLooksEffectBy(effect: LooksEffect, change: Expression?) =
-    addBlock(NormalBlock("looks_changeeffectby")
+    addBlock(
+        NormalBlock("looks_changeeffectby")
         .withExpression("CHANGE", change, ValueInput.NUMBER.of("25"))
         .withField("EFFECT", Field.of(effect.value)))
 
 fun BlockHost.setLooksEffect(effect: LooksEffect, value: Expression?) =
-    addBlock(NormalBlock("looks_seteffectto")
+    addBlock(
+        NormalBlock("looks_seteffectto")
         .withExpression("VALUE", value, ValueInput.NUMBER.of("0"))
         .withField("EFFECT", Field.of(effect.value)))
 
@@ -440,11 +462,13 @@ fun BlockHost.hide() =
 
 
 fun BlockHost.goToLayer(layer: SpecialLayer) =
-    addBlock(NormalBlock("looks_gotofrontback")
+    addBlock(
+        NormalBlock("looks_gotofrontback")
         .withField("FRONT_BACK", Field.of(layer.value)))
 
 fun BlockHost.changeLayer(layerDirection: LayerDirection, layers: Expression?) =
-    addBlock(NormalBlock("looks_goforwardbackwardlayers")
+    addBlock(
+        NormalBlock("looks_goforwardbackwardlayers")
         .withExpression("NUM", layers, ValueInput.INTEGER.of("1"))
         .withField("FORWARD_BACKWARD", Field.of(layerDirection.value)))
 
@@ -472,11 +496,13 @@ val BlockHost.size get() =
 // Sound
 
 fun BlockHost.playSoundUntilDone(sound: Expression?) =
-    addBlock(NormalBlock("sound_playuntildone")
+    addBlock(
+        NormalBlock("sound_playuntildone")
         .withExpression("SOUND_MENU", sound, FirstSound))
 
 fun BlockHost.playSound(sound: Expression?) =
-    addBlock(NormalBlock("sound_play")
+    addBlock(
+        NormalBlock("sound_play")
         .withExpression("SOUND_MENU", sound, FirstSound))
 
 fun BlockHost.stopAllSounds() =
@@ -484,12 +510,14 @@ fun BlockHost.stopAllSounds() =
 
 
 fun BlockHost.changeSoundEffectBy(soundEffect: SoundEffect, value: Expression?) =
-    addBlock(NormalBlock("sound_changeeffectby")
+    addBlock(
+        NormalBlock("sound_changeeffectby")
         .withExpression("VALUE", value, ValueInput.NUMBER.of("10"))
         .withField("EFFECT", Field.of(soundEffect.value)))
 
 fun BlockHost.setSoundEffect(soundEffect: SoundEffect, value: Expression?) =
-    addBlock(NormalBlock("sound_seteffectto")
+    addBlock(
+        NormalBlock("sound_seteffectto")
         .withExpression("VALUE", value, ValueInput.NUMBER.of("100"))
         .withField("EFFECT", Field.of(soundEffect.value)))
 
@@ -498,11 +526,13 @@ fun BlockHost.clearSoundEffects() =
 
 
 fun BlockHost.changeVolumeBy(volume: Expression?) =
-    addBlock(NormalBlock("sound_changevolumeby")
+    addBlock(
+        NormalBlock("sound_changevolumeby")
         .withExpression("VOLUME", volume, ValueInput.NUMBER.of("-10")))
 
 fun BlockHost.setVolume(volume: Expression?) =
-    addBlock(NormalBlock("sound_setvolumeto")
+    addBlock(
+        NormalBlock("sound_setvolumeto")
         .withExpression("VOLUME", volume, ValueInput.NUMBER.of("100")))
 
 val BlockHost.volume get() =
@@ -562,22 +592,26 @@ fun HatBlockHost.whenIReceive(broadcast: Broadcast, block: BlockHost.() -> Unit)
 }
 
 fun BlockHost.broadcast(broadcast: Broadcast) =
-    addBlock(NormalBlock("event_broadcast")
+    addBlock(
+        NormalBlock("event_broadcast")
         .withExpression("BROADCAST_INPUT", broadcast, FirstBroadcast))
 
 fun BlockHost.broadcastAndWait(broadcast: Broadcast) =
-    addBlock(NormalBlock("event_broadcastandwait")
+    addBlock(
+        NormalBlock("event_broadcastandwait")
         .withExpression("BROADCAST_INPUT", broadcast, FirstBroadcast))
 
 // Control
 
 fun BlockHost.waitDuration(duration: Expression?) =
-    addBlock(NormalBlock("control_wait")
+    addBlock(
+        NormalBlock("control_wait")
         .withExpression("DURATION", duration, ValueInput.POSITIVE_NUMBER.of("1")))
 
 fun BlockHost.repeatBlock(expression: Expression?, block: BlockHost.() -> Unit): NormalBlockBlockHost {
     val stack = BlockStack().apply(block)
-    return addBlock(NormalBlockBlockHost("control_repeat", stack)
+    return addBlock(
+        NormalBlockBlockHost("control_repeat", stack)
         .withExpression("TIMES", expression, ValueInput.POSITIVE_INTEGER.of("10")))
 }
 
@@ -621,7 +655,8 @@ fun BlockHost.whileBlock(expression: Expression?, block: BlockHost.() -> Unit): 
 
 fun BlockHost.stopBlock(stopType: StopType = StopType.THIS_SCRIPT): NormalBlock {
     val hasNext = stopType == StopType.OTHER_SCRIPTS_IN_SPRITE
-    return addBlock(NormalBlock("control_stop")
+    return addBlock(
+        NormalBlock("control_stop")
         .withField("STOP_OPTION", Field.of(stopType.code))
         .withDefaultMutation()
         .withMutation("hasnext", JsonPrimitive(hasNext)))
@@ -635,7 +670,8 @@ fun HatBlockHost.whenIStartAsClone(block: BlockHost.() -> Unit): HatBlock {
 }
 
 fun BlockHost.createCloneOf(cloneOption: Expression?) =
-    addBlock(NormalBlock("control_create_clone_of")
+    addBlock(
+        NormalBlock("control_create_clone_of")
         .withExpression("CLONE_OPTION", cloneOption, CloneTarget.myself))
 
 fun BlockHost.createCloneOf(sprite: Sprite) =
@@ -671,7 +707,8 @@ fun BlockHost.distanceTo(sprite: Sprite) =
 
 
 fun BlockHost.askAndWait(question: Expression?) =
-    addBlock(NormalBlock("sensing_askandwait")
+    addBlock(
+        NormalBlock("sensing_askandwait")
         .withExpression("QUESTION", question, ValueInput.TEXT.of("What's your name?")))
 
 val BlockHost.answer get() =
@@ -696,7 +733,8 @@ val BlockHost.mouseY get() =
 
 
 fun BlockHost.setDragMode(dragMode: DragMode) =
-    addBlock(NormalBlock("sensing_setdragmode")
+    addBlock(
+        NormalBlock("sensing_setdragmode")
         .withField("DRAG_MODE", Field.of(dragMode.value)))
 
 
@@ -912,48 +950,57 @@ operator fun Expression?.rem(other: Expression?) =
 // VLB
 
 fun BlockHost.setVar(variable: Variable, expression: Expression?) =
-    addBlock(NormalBlock("data_setvariableto")
+    addBlock(
+        NormalBlock("data_setvariableto")
         .withExpression("VALUE", expression, ValueInput.TEXT.of("0"))
         .withField("VARIABLE", variable))
 
 fun BlockHost.changeVar(variable: Variable, expression: Expression?) =
-    addBlock(NormalBlock("data_changevariableby")
+    addBlock(
+        NormalBlock("data_changevariableby")
         .withExpression("VALUE", expression, ValueInput.NUMBER.of("1"))
         .withField("VARIABLE", variable))
 
 fun BlockHost.showVar(variable: Variable) =
-    addBlock(NormalBlock("data_showvariable")
+    addBlock(
+        NormalBlock("data_showvariable")
         .withField("VARIABLE", variable))
 
 fun BlockHost.hideVar(variable: Variable) =
-    addBlock(NormalBlock("data_hidevariable")
+    addBlock(
+        NormalBlock("data_hidevariable")
         .withField("VARIABLE", variable))
 
 
 
 fun BlockHost.append(list: ScratchList, value: Expression?) =
-    addBlock(NormalBlock("data_addtolist")
+    addBlock(
+        NormalBlock("data_addtolist")
         .withExpression("ITEM", value, ValueInput.TEXT.of("thing"))
         .withField("LIST", list))
 
 
 fun BlockHost.deleteAtIndex(list: ScratchList, index: Expression?) =
-    addBlock(NormalBlock("data_deleteoflist")
+    addBlock(
+        NormalBlock("data_deleteoflist")
         .withExpression("INDEX", index, ValueInput.INTEGER.of("1"))
         .withField("LIST", list))
 
 fun BlockHost.deleteAll(list: ScratchList) =
-    addBlock(NormalBlock("data_deletealloflist")
+    addBlock(
+        NormalBlock("data_deletealloflist")
         .withField("LIST", list))
 
 fun BlockHost.insertAtIndex(list: ScratchList, value: Expression?, index: Expression?) =
-    addBlock(NormalBlock("data_insertatlist")
+    addBlock(
+        NormalBlock("data_insertatlist")
         .withExpression("INDEX", index, ValueInput.INTEGER.of("1"))
         .withExpression("ITEM", value, ValueInput.TEXT.of("thing"))
         .withField("LIST", list))
 
 fun BlockHost.replaceAtIndex(list: ScratchList, value: Expression?, index: Expression?) =
-    addBlock(NormalBlock("data_replaceitemoflist")
+    addBlock(
+        NormalBlock("data_replaceitemoflist")
         .withExpression("INDEX", index, ValueInput.INTEGER.of("1"))
         .withExpression("ITEM", value, ValueInput.TEXT.of("thing"))
         .withField("LIST", list))
@@ -973,7 +1020,8 @@ fun ScratchList.indexOf(value: Expression?) =
     NormalUnaryOp("data_itemnumoflist", value, "ITEM", ValueInput.TEXT.of("thing"))
         .withField("LIST", this)
 
-val ScratchList.listLength: Expression get() =
+val ScratchList.listLength: Expression
+    get() =
     NormalExpression("data_lengthoflist")
         .withField("LIST", this)
 
@@ -983,11 +1031,13 @@ infix fun ScratchList.containsItem(value: Expression?) =
 
 
 fun BlockHost.showList(list: ScratchList) =
-    addBlock(NormalBlock("data_showlist")
+    addBlock(
+        NormalBlock("data_showlist")
         .withField("LIST", list))
 
 fun BlockHost.hideList(list: ScratchList) =
-    addBlock(NormalBlock("data_hidelist")
+    addBlock(
+        NormalBlock("data_hidelist")
         .withField("LIST", list))
 
 // My Blocks

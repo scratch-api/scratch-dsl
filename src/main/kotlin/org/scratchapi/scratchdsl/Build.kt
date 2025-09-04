@@ -1,6 +1,6 @@
 @file:Suppress("unused")
 
-package de.thecommcraft.scratchdsl
+package org.scratchapi.scratchdsl
 
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.*
@@ -126,7 +126,8 @@ interface Field {
 
 interface BlockBlockHost : Block, BlockHost
 
-class BlockStack(myId: String = IdGenerator.makeId(), val contents: MutableList<Block> = mutableListOf()) : HasId, Flattenable, BlockHost {
+class BlockStack(myId: String = IdGenerator.makeId(), val contents: MutableList<Block> = mutableListOf()) : HasId,
+    Flattenable, BlockHost {
     fun isEmpty() = contents.isEmpty()
     fun isNotEmpty() = contents.isNotEmpty()
     override var id: String = myId

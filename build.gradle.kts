@@ -3,7 +3,7 @@ plugins {
     kotlin("plugin.serialization") version "2.0.10"
 }
 
-group = "de.thecommcraft"
+group = "org.scratchapi"
 version = "1.0-SNAPSHOT"
 
 repositories {

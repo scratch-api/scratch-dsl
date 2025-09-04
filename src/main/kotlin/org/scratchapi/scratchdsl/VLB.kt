@@ -1,4 +1,4 @@
-package de.thecommcraft.scratchdsl
+package org.scratchapi.scratchdsl
 
 import kotlinx.serialization.json.add
 import kotlinx.serialization.json.buildJsonArray
@@ -22,7 +22,8 @@ sealed class VLB(opcode: String?, val name: String, private val variant: VLBVari
         }
 }
 
-class Variable internal constructor(name: String, val sprite: Sprite) : VLB(null, name, VLBVariant.VARIABLE), HandlesSet {
+class Variable internal constructor(name: String, val sprite: Sprite) : VLB(null, name, VLBVariant.VARIABLE),
+    HandlesSet {
 
     override var expressionSetHandler: ((Expression?) -> Block)? = { expression ->
         NormalBlock("data_setvariableto")
