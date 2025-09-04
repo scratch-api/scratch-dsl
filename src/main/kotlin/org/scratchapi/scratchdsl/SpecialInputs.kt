@@ -349,22 +349,28 @@ class ProcedureArgumentStringNumber internal constructor(
     override val name: String,
     override val default: String = "",
     override val argumentId: String = IdGenerator.makeRandomId(6)
-) : ProcedureArgument, NormalExpression("argument_reporter_string_number") {
+) : ProcedureArgument, NormalExpression("argument_reporter_string_number"), NonShadowShouldCopy {
 
     init {
         fields["VALUE"] = Field.of(name)
     }
+
+    override fun makeCopy() =
+        ProcedureArgumentStringNumber(name, default, argumentId)
 }
 
 class ProcedureArgumentBoolean internal constructor(
     override val name: String,
     override val default: String = "false",
     override val argumentId: String = IdGenerator.makeRandomId(6)
-) : ProcedureArgument, NormalExpression("argument_reporter_boolean") {
+) : ProcedureArgument, NormalExpression("argument_reporter_boolean"), NonShadowShouldCopy {
 
     init {
         fields["VALUE"] = Field.of(name)
     }
+
+    override fun makeCopy() =
+        ProcedureArgumentBoolean(name, default, argumentId)
 }
 
 class ProcedurePrototype internal constructor(val proccode: String, val warp: Boolean, val arguments: List<ProcedureArgument>) : NormalExpression("procedures_prototype"), ShadowExpression {
