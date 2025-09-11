@@ -13,7 +13,8 @@ plugins {
 }
 
 group = "de.thecommcraft"
-version = "0.0.0a2"
+version = (System.getenv("GITHUB_REF_NAME")?.removePrefix("v")
+    ?: "0.0.0a2")
 
 java {
     withJavadocJar()
