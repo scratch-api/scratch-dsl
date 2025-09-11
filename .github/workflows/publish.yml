@@ -34,3 +34,5 @@ jobs:
           ORG_GRADLE_PROJECT_sonatypePassword: ${{ secrets.SONATYPE_PASSWORD }}
           ORG_GRADLE_PROJECT_signing.gnupg.keyName: ${{ secrets.GPG_KEY_ID }}
           ORG_GRADLE_PROJECT_signing.gnupg.executable: gpg
+          ORG_GRADLE_PROJECT_signing.gnupg.password: ${{ secrets.GPG_PASSPHRASE }}
+          ORG_GRADLE_PROJECT_signing.gnupg.options: --pinentry-mode=loopback
