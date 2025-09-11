@@ -19,6 +19,10 @@ sealed class VLB(opcode: String?, val name: String, private val variant: VLBVari
             add(name)
             add(id)
         }
+
+    override fun cloneExpression(): Expression {
+        return this
+    }
 }
 
 sealed interface VariableLike {
@@ -67,6 +71,14 @@ class ScratchListSlot internal constructor(name: String, val value: JsonArray) :
     internal constructor(name: String, block: JsonArrayBuilder.() -> Unit) : this(name, buildJsonArray(block))
 }
 
-class Broadcast internal constructor(name: String) : VLB(null, name, VLBVariant.BROADCAST), ShadowExpression
+class Broadcast internal constructor(name: String) : VLB(null, name, VLBVariant.BROADCAST), ShadowExpression {
+    override fun cloneShadowExpression(): ShadowExpression {
+        return this
+    }
+}
 
-class BroadcastSlot internal constructor(name: String) : VLB(null, name, VLBVariant.BROADCAST), ShadowExpression
+class BroadcastSlot internal constructor(name: String) : VLB(null, name, VLBVariant.BROADCAST), ShadowExpression {
+    override fun cloneShadowExpression(): ShadowExpression {
+        return this
+    }
+}

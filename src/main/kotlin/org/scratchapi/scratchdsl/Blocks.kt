@@ -124,8 +124,27 @@ open class NormalBlock internal constructor(override val opcode: String?) : Bloc
         }
     }
 
-    override fun loadInto(representation: Representation) {
-        TODO("Not implemented yet")
+//    override fun loadInto(representation: Representation) {
+//
+//    }
+
+    override fun cloneBlock(): Block {
+        val cloned = NormalBlock(opcode)
+        shadowlessExpressionInputs.forEach { (t, u) ->
+            cloned.shadowlessExpressionInputs[t] = u?.cloneExpression()
+        }
+        expressionInputs.forEach { (t, u) ->
+            cloned.expressionInputs[t] = u?.let {
+                it.first.cloneShadowExpression() to it.second?.cloneExpression()
+            }
+        }
+        blockStackInputs.forEach { (t, u) ->
+            cloned.blockStackInputs[t] = u?.cloneBlockStack()
+        }
+        fields.forEach { (t, u) ->
+            cloned.fields[t] = u
+        }
+        return cloned
     }
 }
 
@@ -255,13 +274,17 @@ class IsolatedBlockStackHat internal constructor(val blockStack: BlockStack) : H
 
     override fun<B: AnyBlock> addBlock(block: B) = block.apply(blockStack::addBlock)
 
-    override fun loadInto(representation: Representation) {
-        TODO("Not yet implemented")
-    }
+//    override fun loadInto(representation: Representation) {
+//
+//    }
 
     override fun prepareRepresent(sprite: Sprite) {
         actualBlock.topLevel = true
         blockStack.prepareRepresent(sprite)
+    }
+
+    override fun cloneBlock(): Block {
+        return IsolatedBlockStackHat(blockStack.cloneBlockStack())
     }
 }
 
@@ -1100,3 +1123,18 @@ internal fun HatBlockHost.makeProcedureDefinition(prototype: ProcedurePrototype,
     hatBlock.blockStack.block()
     return addHatBlock(hatBlock)
 }
+
+/**
+ * Creates a block stack *without* adding it.
+ */
+fun createBlockStack(block: BlockHost.() -> Unit) = BlockStack().apply(block)
+
+/**
+ * Creates a block stack and adds it.
+ */
+fun BlockHost.blockStack(block: BlockHost.() -> Unit) = blockStack(createBlockStack(block))
+
+/**
+ * Adds a block stack.
+ */
+fun BlockHost.blockStack(blockStack: BlockStack) = blockStack.contents.forEach(::addBlock)

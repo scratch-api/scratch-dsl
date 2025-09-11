@@ -5,12 +5,12 @@
 Gradle:
 ```kotlin
 repositories {
-    maven("https://jitpack.io")
+    mavenCentral()
 }
 
 dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.1")
-    implementation("com.github.scratch-api:scratch-dsl:master-SNAPSHOT")
+    implementation("de.thecommcraft:scratchdsl:0.0.0a2")
 }
 ```
 
@@ -56,7 +56,7 @@ fun main() =
             }
         }
     }
-        .encode() // Encode to json
+        .toProjectJsonContents() // Encode to json
         .output() // Print the json output
 ```
 

@@ -13,6 +13,8 @@ interface Asset {
     val dataFormat: String
     val path: Path?
     val data: ByteArray?
+    val md5Ext: String
+        get() = "$assetId.$dataFormat"
     fun JsonObjectBuilder.extraAttributes() {
 
     }
@@ -20,7 +22,7 @@ interface Asset {
         buildJsonObject {
             put("assetId", assetId)
             put("dataFormat", dataFormat)
-            put("md5ext", "$assetId.$dataFormat")
+            put("md5ext", md5Ext)
             put("name", name)
             extraAttributes()
         }
@@ -32,9 +34,16 @@ fun getChecksum(path: Path): String {
     return BigInteger(1, hash).toString(16)
 }
 
-internal fun loadCostume(path: Path, name: String): Costume {
+internal fun loadCostume(path: Path, name: String, bitmapResolution: Int = 1, rotationCenter: Pair<Double, Double>? = null): Costume {
     val checksum = getChecksum(path)
-    return Costume(name, path.extension, checksum, path = path)
+    return Costume(
+        name,
+        path.extension,
+        checksum,
+        path = path,
+        rotationCenter = rotationCenter,
+        bitmapResolution = bitmapResolution
+    )
 }
 
 data class Costume internal constructor(
@@ -42,11 +51,13 @@ data class Costume internal constructor(
     override val dataFormat: String,
     override val assetId: String,
     val rotationCenter: Pair<Double, Double>? = null,
+    val bitmapResolution: Int = 1,
     override val path: Path? = null,
     override val data: ByteArray? = null
-) : Asset, Field, NormalShadowExpression("looks_costume"), ShadowShouldCopy {
+) : Asset, Field, NormalShadowExpressionShouldCopy("looks_costume") {
     override val fieldValue: Field.Companion.FieldValue = Field.Companion.FieldValue(name)
     override fun JsonObjectBuilder.extraAttributes() {
+        put("bitmapResolution", bitmapResolution)
         rotationCenter?.let {
             put("rotationCenterX", it.first)
             put("rotationCenterY", it.second)
@@ -107,7 +118,7 @@ internal fun Expression?.asBackdrop(): Expression? {
 data class Backdrop internal constructor(
     val name: String,
     val costume: Costume
-) : NormalShadowExpression("looks_backdrops"), ShadowShouldCopy, Field {
+) : NormalShadowExpressionShouldCopy("looks_backdrops"), Field {
     override val fieldValue: Field.Companion.FieldValue = Field.Companion.FieldValue(name)
 
     init {
@@ -165,7 +176,7 @@ data class Sound internal constructor(
     val sampleCount: Int? = null,
     override val path: Path? = null,
     override val data: ByteArray? = null
-) : Asset, Field, NormalShadowExpression("sound_sounds_menu"), ShadowShouldCopy {
+) : Asset, Field, NormalShadowExpressionShouldCopy("sound_sounds_menu") {
     override val fieldValue: Field.Companion.FieldValue = Field.Companion.FieldValue("name")
     override fun JsonObjectBuilder.extraAttributes() {
         rate?.let {

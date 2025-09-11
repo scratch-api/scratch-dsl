@@ -4,6 +4,7 @@ package org.scratchapi.scratchdsl
 
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.*
+import org.scratchapi.scratchdsl.SpecialLocation.Companion
 
 val SpriteBuilder.specialLocation get() = SpecialLocation.of(name)
 
@@ -19,12 +20,17 @@ val VariableLike.property get() = Property.of(name)
 
 val KeyboardKey.sensingKey get() = SensingKey.of(this)
 
+abstract class NormalShadowExpressionShouldCopy(opcode: String?) : NormalShadowExpression(opcode), ShadowShouldCopy {
+    override fun cloneShadowExpression(): ShadowExpression =
+        makeCopy()
+}
+
 interface SpecialLocation : ShadowExpression, ShadowShouldCopy {
     companion object {
         val random = of("_random_")
         val mouse = of("_mouse_")
         fun of(target: String, opcode: String? = null): SpecialLocation =
-            object : NormalShadowExpression(null), SpecialLocation, OpcodeSettableShadowExpression {
+            object : NormalShadowExpressionShouldCopy(null), SpecialLocation, OpcodeSettableShadowExpression {
                 override val target = target
                 override fun representAlone(): Representation =
                     JsonPrimitive(id)
@@ -43,7 +49,7 @@ interface CloneTarget : ShadowExpression, ShadowShouldCopy {
     companion object {
         val myself = of("_myself_")
         fun of(target: String): CloneTarget =
-            object : NormalShadowExpression("control_create_clone_of_menu"), CloneTarget {
+            object : NormalShadowExpressionShouldCopy("control_create_clone_of_menu"), CloneTarget {
                 override val target = target
                 override fun representAlone(): Representation =
                     JsonPrimitive(id)
@@ -62,7 +68,7 @@ interface TouchObject : ShadowExpression, ShadowShouldCopy {
         val mouse = of("_mouse_")
         val edge = of("_edge_")
         fun of(target: String): TouchObject =
-            object : NormalShadowExpression("sensing_touchingobjectmenu"), TouchObject {
+            object : NormalShadowExpressionShouldCopy("sensing_touchingobjectmenu"), TouchObject {
                 override val target = target
                 override fun representAlone(): Representation =
                     JsonPrimitive(id)
@@ -80,7 +86,7 @@ interface DistanceObject : ShadowExpression, ShadowShouldCopy {
     companion object {
         val mouse = of("_mouse_")
         fun of(target: String): DistanceObject =
-            object : NormalShadowExpression("sensing_distancetomenu"), DistanceObject {
+            object : NormalShadowExpressionShouldCopy("sensing_distancetomenu"), DistanceObject {
                 override val target = target
                 override fun representAlone(): Representation =
                     JsonPrimitive(id)
@@ -97,7 +103,7 @@ interface DistanceObject : ShadowExpression, ShadowShouldCopy {
 interface SensingKey : ShadowExpression, ShadowShouldCopy {
     companion object {
         fun of(key: KeyboardKey): SensingKey =
-            object : NormalShadowExpression("sensing_keyoptions"), SensingKey {
+            object : NormalShadowExpressionShouldCopy("sensing_keyoptions"), SensingKey {
                 override val key = key
                 override fun representAlone(): Representation =
                     JsonPrimitive(id)
@@ -115,7 +121,7 @@ interface PropertyTarget : ShadowExpression, ShadowShouldCopy {
     companion object {
         val stage = of("_stage_")
         fun of(target: String): PropertyTarget =
-            object : NormalShadowExpression("sensing_of_object_menu"), PropertyTarget {
+            object : NormalShadowExpressionShouldCopy("sensing_of_object_menu"), PropertyTarget {
                 override val target = target
                 override fun representAlone(): Representation =
                     JsonPrimitive(id)
@@ -150,7 +156,7 @@ interface Property : Field {
     val target: String
 }
 
-object FirstBackdrop : NormalShadowExpression("looks_backdrops"), Field, ShadowShouldCopy {
+object FirstBackdrop : NormalShadowExpressionShouldCopy("looks_backdrops"), Field {
     private lateinit var backdrop: Backdrop
 
     override val fieldValue: Field.Companion.FieldValue
@@ -172,7 +178,7 @@ object FirstBackdrop : NormalShadowExpression("looks_backdrops"), Field, ShadowS
         backdrop.makeCopy()
 }
 
-object FirstSprite : NormalShadowExpression("looks_costume"), Field, ShadowShouldCopy {
+object FirstSprite : NormalShadowExpressionShouldCopy("looks_costume"), Field {
     private lateinit var costume: Costume
 
     override val fieldValue: Field.Companion.FieldValue
@@ -194,7 +200,7 @@ object FirstSprite : NormalShadowExpression("looks_costume"), Field, ShadowShoul
         costume.makeCopy()
 }
 
-object FirstSound : NormalShadowExpression("sound_sounds_menu"), Field, ShadowShouldCopy {
+object FirstSound : NormalShadowExpressionShouldCopy("sound_sounds_menu"), Field {
     private var sound: Sound? = null
 
     override val fieldValue: Field.Companion.FieldValue
@@ -216,7 +222,7 @@ object FirstSound : NormalShadowExpression("sound_sounds_menu"), Field, ShadowSh
         sound?.makeCopy() ?: Sound("", "", "")
 }
 
-object FirstBroadcast : NormalShadowExpression("sound_sounds_menu"), Field, ShadowShouldCopy {
+object FirstBroadcast : NormalShadowExpressionShouldCopy("sound_sounds_menu"), Field {
     private lateinit var broadcast: Broadcast
 
     override val fieldValue: Field.Companion.FieldValue
@@ -313,36 +319,55 @@ enum class TimeUnit(val value: String) {
     SECOND("SECOND")
 }
 
-sealed interface ProcedureArgument : ShadowExpression {
+sealed interface ProcedureArgument : Expression {
     val name: String
     val default: String
     val argumentId: String
+    fun cloneProcedureArgument(): ProcedureArgument
 }
 
 class ProcedureArgumentStringNumberShadow internal constructor(
     override val name: String,
-    override val default: String = ""
+    override val default: String = "",
+    override val argumentId: String = IdGenerator.makeRandomId(6)
 ) : ProcedureArgument, NormalShadowExpression("argument_reporter_string_number") {
-    override val argumentId = IdGenerator.makeRandomId(6)
+
     init {
         fields["VALUE"] = Field.of(name)
     }
 
     override fun representAlone() =
         JsonPrimitive(id)
+
+    override fun cloneShadowExpression(): ShadowExpression {
+        return ProcedureArgumentStringNumberShadow(name, default, argumentId)
+    }
+
+    override fun cloneProcedureArgument(): ProcedureArgument {
+        return ProcedureArgumentStringNumberShadow(name, default, argumentId)
+    }
 }
 
 class ProcedureArgumentBooleanShadow internal constructor(
     override val name: String,
-    override val default: String = "false"
+    override val default: String = "false",
+    override val argumentId: String = IdGenerator.makeRandomId(6)
 ) : ProcedureArgument, NormalShadowExpression("argument_reporter_boolean") {
-    override val argumentId = IdGenerator.makeRandomId(6)
+
     init {
         fields["VALUE"] = Field.of(name)
     }
 
     override fun representAlone() =
         JsonPrimitive(id)
+
+    override fun cloneShadowExpression(): ShadowExpression {
+        return ProcedureArgumentBooleanShadow(name, default, argumentId)
+    }
+
+    override fun cloneProcedureArgument(): ProcedureArgument {
+        return ProcedureArgumentBooleanShadow(name, default, argumentId)
+    }
 }
 
 class ProcedureArgumentStringNumber internal constructor(
@@ -357,6 +382,10 @@ class ProcedureArgumentStringNumber internal constructor(
 
     override fun makeCopy() =
         ProcedureArgumentStringNumber(name, default, argumentId)
+
+    override fun cloneProcedureArgument(): ProcedureArgument {
+        return ProcedureArgumentStringNumber(name, default, argumentId)
+    }
 }
 
 class ProcedureArgumentBoolean internal constructor(
@@ -371,6 +400,10 @@ class ProcedureArgumentBoolean internal constructor(
 
     override fun makeCopy() =
         ProcedureArgumentBoolean(name, default, argumentId)
+
+    override fun cloneProcedureArgument(): ProcedureArgument {
+        return ProcedureArgumentBoolean(name, default, argumentId)
+    }
 }
 
 class ProcedurePrototype internal constructor(val proccode: String, val warp: Boolean, val arguments: List<ProcedureArgument>) : NormalExpression("procedures_prototype"), ShadowExpression {
@@ -398,6 +431,10 @@ class ProcedurePrototype internal constructor(val proccode: String, val warp: Bo
             }
         }))
         mutation["warp"] = JsonPrimitive(Json.encodeToString(warp))
+    }
+
+    override fun cloneShadowExpression(): ShadowExpression {
+        return ProcedurePrototype(proccode, warp, arguments.map(ProcedureArgument::cloneProcedureArgument))
     }
 }
 

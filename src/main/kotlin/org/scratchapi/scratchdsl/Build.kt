@@ -2,14 +2,19 @@
 
 package org.scratchapi.scratchdsl
 
+import de.jonasbroeckmann.kzip.Zip
+import de.jonasbroeckmann.kzip.open
+import kotlinx.io.Buffer
+import kotlinx.io.Source
+import kotlinx.io.writeString
+import kotlinx.io.files.Path as PathB
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.*
 import java.nio.file.Path
 import kotlin.random.Random
 import okhttp3.*
 import java.util.zip.ZipFile
-import kotlin.io.path.extension
-import kotlin.io.path.readText
+import kotlin.io.path.*
 
 interface HasId {
     var id: String
@@ -103,18 +108,19 @@ interface Representable<R: Representation> {
     fun represent(): R
 }
 
-interface Loadable<R: Representation> {
-    fun loadInto(representation: R)
-}
+//interface Loadable<R: Representation> {
+//    fun loadInto(representation: R)
+//}
 
 typealias AnyBlock = Block
 
-interface Block : Representable<Representation>, Loadable<Representation>, HasId, Flattenable {
+interface Block : Representable<Representation>, HasId, Flattenable {
     var next: AnyBlock?
     val opcode: String?
     var topLevel: Boolean
     var parent: String?
     var shadow: Boolean
+    fun cloneBlock(): Block
 }
 
 interface Field {
@@ -130,8 +136,10 @@ interface Field {
 
 interface BlockBlockHost : Block, BlockHost
 
-class BlockStack(myId: String = IdGenerator.makeId(), val contents: MutableList<Block> = mutableListOf()) : HasId,
-    Flattenable, BlockHost {
+class BlockStack(
+    myId: String = IdGenerator.makeId(),
+    val contents: MutableList<Block> = mutableListOf()
+) : HasId, Flattenable, BlockHost {
     fun isEmpty() = contents.isEmpty()
     fun isNotEmpty() = contents.isNotEmpty()
     override var id: String = myId
@@ -154,6 +162,10 @@ class BlockStack(myId: String = IdGenerator.makeId(), val contents: MutableList<
     override fun<B: AnyBlock> addBlock(block: B) = block.apply(contents::add)
 
     override val stacks = listOf(this)
+
+    fun cloneBlockStack(): BlockStack {
+        return BlockStack(contents = contents.map(Block::cloneBlock).toMutableList())
+    }
 }
 
 interface HatBlock : BlockBlockHost
@@ -170,6 +182,11 @@ class BuildRoot internal constructor() : Representable<Representation> {
     var monitorData: Representation = buildJsonArray {  }
         private set
     private val extensions = mutableListOf<Representation>()
+
+    /**
+     * Where the builder will look for assets to be included in a sb3 file.
+     */
+    val assetDirectories = mutableListOf<Path>()
 
     override fun represent() = buildJsonObject {
         targets.forEach(SpriteBuilder::prepareRepresent)
@@ -285,8 +302,9 @@ class BuildRoot internal constructor() : Representable<Representation> {
         dataFormat: String,
         assetId: String,
         rotationCenter: Pair<Double, Double>? = null,
+        bitmapResolution: Int = 1,
         path: Path? = null
-    ) = stage.addBackdrop(name, dataFormat, assetId, rotationCenter, path)
+    ) = stage.addBackdrop(name, dataFormat, assetId, rotationCenter, bitmapResolution, path)
 
     fun addBackdrop(
         path: Path,
@@ -343,9 +361,10 @@ class StageBuilder internal constructor(root: BuildRoot) : HatBlockHost {
         dataFormat: String,
         assetId: String,
         rotationCenter: Pair<Double, Double>? = null,
+        bitmapResolution: Int = 1,
         path: Path? = null
     ): Backdrop {
-        val backdrop = spriteBuilder.addCostume(name, dataFormat, assetId, rotationCenter, path).asBackdrop()
+        val backdrop = spriteBuilder.addCostume(name, dataFormat, assetId, rotationCenter, bitmapResolution, path).asBackdrop()
         backdropList.add(backdrop)
         return backdrop
     }
@@ -402,7 +421,7 @@ class SpriteBuilder internal constructor(val root: BuildRoot) : HatBlockHost, Re
         if (costumes.isEmpty()) {
             val data = "<svg version=\"1.1\" width=\"2\" height=\"2\" viewBox=\"-1 -1 2 2\" xmlns=\"http://www.w3.org/2000/svg\" xmlns:xlink=\"http://www.w3.org/1999/xlink\">\\n  <!-- Exported by Scratch - http://scratch.mit.edu/ -->\\n</svg>"
                 .toByteArray()
-            +Costume("costume1", "svg", "cd21514d0531fdffb22204e0ec5ed84a", data=data)
+            +Costume("costume1", "svg", "de342ccf4bbe18d30bcacafb819dd91f", data=data)
         }
         if (broadcasts.isEmpty() && isStage) {
             root.stage.makeBroadcast("message1")
@@ -540,13 +559,16 @@ class SpriteBuilder internal constructor(val root: BuildRoot) : HatBlockHost, Re
         dataFormat: String,
         assetId: String,
         rotationCenter: Pair<Double, Double>? = null,
+        bitmapResolution: Int = 1,
         path: Path? = null
-    ) = +Costume(name, dataFormat, assetId, rotationCenter, path)
+    ) = +Costume(name, dataFormat, assetId, rotationCenter, bitmapResolution, path)
 
     fun addCostume(
         path: Path,
-        name: String
-    ) = +loadCostume(path, name)
+        name: String,
+        bitmapResolution: Int = 1,
+        rotationCenter: Pair<Double, Double>? = null
+    ) = +loadCostume(path, name, bitmapResolution, rotationCenter)
 
     fun addSound(
         name: String,
@@ -568,9 +590,128 @@ typealias Sprite = SpriteBuilder
 fun build(block: BuildRoot.() -> Unit) =
     BuildRoot().apply(block)
 
-fun BuildRoot.encode() = Json.encodeToString(represent())
+data class ProjectJson(
+    val string: String,
+    val buildRoot: BuildRoot
+)
 
-fun String.output() = println(this)
+fun BuildRoot.toProjectJsonContents() = ProjectJson(Json.encodeToString(represent()), this)
+
+/**
+ * Writes the project json into a file at the path.
+ */
+fun BuildRoot.writeToProjectJsonPath(path: Path) = toProjectJsonContents().writeToProjectJsonPath(path)
+
+/**
+ * Writes the project json into an existing scratch project.
+ */
+fun BuildRoot.modifyProject(path: Path) {
+    toProjectJsonContents().modifyProject(path)
+}
+
+/**
+ * Uses the project json and the included assets to create a sb3 file.
+ */
+fun BuildRoot.writeTo(path: Path) {
+    toProjectJsonContents().writeTo(path)
+}
+
+internal data class AssetResource(
+    val source: Source? = null,
+    val path: Path? = null
+) : AutoCloseable {
+    override fun close() {
+        source?.close()
+    }
+}
+
+internal fun BuildRoot.locateResource(asset: Asset): Path {
+    assetDirectories.forEach { dir ->
+        if (!dir.isDirectory()) return@forEach
+        dir.listDirectoryEntries().forEach entries@{ path ->
+            if (!path.isRegularFile()) return@entries
+            if (
+                path.fileName.toString() == asset.md5Ext ||
+                path.fileName.toString() == "${asset.name}.${asset.dataFormat}"
+            ) {
+                return path
+            }
+        }
+    }
+    throw IllegalArgumentException("Asset ${asset.name}.${asset.dataFormat} could not be located. Please pass its path or include the directory it is in in the assetDirectories of your BuildRoot.")
+}
+
+internal fun BuildRoot.getResources(): Map<String, AssetResource> {
+    val resources = mutableMapOf<String, AssetResource>()
+    targets.forEach { target ->
+        target.costumes.forEach { (_, costume) ->
+            resources[costume.md5Ext] = if (costume.path != null) {
+                AssetResource(path = costume.path)
+            } else if (costume.data != null) {
+                AssetResource(source = Buffer().apply { write(costume.data) })
+            } else {
+                AssetResource(path = locateResource(costume))
+            }
+        }
+        target.sounds.forEach { (_, sound) ->
+            resources[sound.md5Ext] = if (sound.path != null) {
+                AssetResource(path = sound.path)
+            } else if (sound.data != null) {
+                AssetResource(source = Buffer().apply { write(sound.data) })
+            } else {
+                AssetResource(path = locateResource(sound))
+            }
+        }
+    }
+    return resources
+}
+
+
+/**
+ * Writes the project json into a file at the path.
+ */
+fun ProjectJson.writeToProjectJsonPath(path: Path) = path.writeText(string)
+
+/**
+ * Writes the project json into an existing scratch project.
+ */
+fun ProjectJson.modifyProject(path: Path) {
+    Buffer().apply { writeString(string) }.use { textSource ->
+        Zip.open(PathB(path.toString()), mode=Zip.Mode.Append).use { zip ->
+            zip.entryFromSource(PathB("project.json"), textSource)
+        }
+    }
+}
+
+/**
+ * Uses the project json and the included assets to create a sb3 file.
+ */
+fun ProjectJson.writeTo(path: Path) {
+    val resources = buildRoot.getResources()
+    try {
+        Buffer().apply { writeString(string) }.use { textSource ->
+            Zip.open(PathB(path.toString()), mode=Zip.Mode.Write).use { zip ->
+                zip.entryFromSource(PathB("project.json"), textSource)
+                resources.forEach { (name, resource) ->
+                    resource.source?.let {
+                        zip.entryFromSource(PathB(name), it)
+                    } ?: resource.path?.let {
+                        zip.entryFromPath(PathB(name), PathB(it.toString()))
+                    }
+                }
+            }
+        }
+    } finally {
+        resources.values.forEach(AutoCloseable::close)
+    }
+}
+
+/**
+ * Prints out the string.
+ */
+fun ProjectJson.output() = println(string)
+
+val String.path get() = Path(this)
 
 object IdGenerator {
     const val ALLOWED_CHARS = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"

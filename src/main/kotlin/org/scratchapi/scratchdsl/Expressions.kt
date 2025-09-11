@@ -15,6 +15,8 @@ interface Expression : Block {
             add(representAlone())
         }
     }
+
+    fun cloneExpression(): Expression
 }
 
 open class NormalExpression(opcode: String?) : NormalBlock(opcode), Expression {
@@ -22,6 +24,26 @@ open class NormalExpression(opcode: String?) : NormalBlock(opcode), Expression {
 
     override fun representAlone(): Representation =
         JsonPrimitive(id)
+
+    override fun cloneBlock(): Block {
+        return cloneExpression()
+    }
+
+    override fun cloneExpression(): Expression {
+        val cloned = NormalExpression(opcode)
+        shadowlessExpressionInputs.forEach { (t, u) ->
+            cloned.shadowlessExpressionInputs[t] = u?.cloneExpression()
+        }
+        expressionInputs.forEach { (t, u) ->
+            cloned.expressionInputs[t] = u?.let {
+                it.first.cloneShadowExpression() to it.second?.cloneExpression()
+            }
+        }
+        blockStackInputs.forEach { (t, u) ->
+            cloned.blockStackInputs[t] = u?.cloneBlockStack()
+        }
+        return cloned
+    }
 }
 
 open class HandlesSetNormalExpression(opcode: String?) : NormalExpression(opcode), HandlesSet {
@@ -102,6 +124,8 @@ interface ShadowExpression : Expression {
             add(representAlone())
         }
     }
+
+    fun cloneShadowExpression(): ShadowExpression
 }
 
 interface NonShadowShouldCopy : Expression {
@@ -121,6 +145,10 @@ interface ShadowShouldCopy : ShadowExpression, NonShadowShouldCopy {
 abstract class NormalShadowExpression(opcode: String? = null) : NormalExpression(opcode), ShadowExpression {
     override var shadow = true
     abstract override fun representAlone(): Representation
+
+    override fun cloneExpression(): Expression {
+        return cloneShadowExpression()
+    }
 }
 
 enum class MathOps(val code: String) {
@@ -181,6 +209,10 @@ data class ValueShadowExpression(val value: String, override val opcode: String?
             add(numericType)
             add(value)
         }
+
+    override fun cloneShadowExpression(): ShadowExpression {
+        return ValueShadowExpression(value, opcode)
+    }
 }
 
 internal interface OpcodeSettableShadowExpression : ShadowExpression {
