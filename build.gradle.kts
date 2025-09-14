@@ -14,7 +14,7 @@ plugins {
 
 group = "de.thecommcraft"
 version = (System.getenv("GITHUB_REF_NAME")?.removePrefix("v")
-    ?: "0.0.0a2")
+    ?: "0.0.1a1")
 
 java {
     withJavadocJar()
@@ -82,10 +82,12 @@ publishing {
 }
 
 signing {
-    useInMemoryPgpKeys(
-        System.getenv("GPG_PRIVATE_KEY"),
-        System.getenv("GPG_PASSPHRASE")
-    )
+    System.getenv("GPG_PRIVATE_KEY")?.let {
+        useInMemoryPgpKeys(
+            System.getenv("GPG_PRIVATE_KEY"),
+            System.getenv("GPG_PASSPHRASE")
+        )
+    } ?: useGpgCmd()
     sign(publishing.publications["mavenJava"])
 }
 
