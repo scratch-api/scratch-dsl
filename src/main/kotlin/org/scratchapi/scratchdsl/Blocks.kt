@@ -1095,6 +1095,12 @@ class ProcedurePrototypeBuilder(name: String, val warp: Boolean) {
         arguments.add(argument)
         return ProcedureArgumentStringNumber(name, default, argument.argumentId)
     }
+    fun number(name: String, default: String = "1"): ProcedureArgumentStringNumber {
+        proccode += " %n"
+        val argument = ProcedureArgumentStringNumberShadow(name, default)
+        arguments.add(argument)
+        return ProcedureArgumentStringNumber(name, default, argument.argumentId)
+    }
     fun boolean(name: String, default: String = "false"): ProcedureArgumentBoolean {
         proccode += " %b"
         val argument = ProcedureArgumentBooleanShadow(name, default)
@@ -1104,6 +1110,9 @@ class ProcedurePrototypeBuilder(name: String, val warp: Boolean) {
     fun text(text: String) {
         proccode += " "
         proccode += text
+    }
+    fun setProccode(text: String) {
+        proccode = text
     }
 }
 

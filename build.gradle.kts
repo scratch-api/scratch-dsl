@@ -14,7 +14,7 @@ plugins {
 
 group = "de.thecommcraft"
 version = (System.getenv("GITHUB_REF_NAME")?.removePrefix("v")
-    ?: "0.0.1a1")
+    ?: "0.0.1a2")
 
 java {
     withJavadocJar()
