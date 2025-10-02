@@ -10,7 +10,7 @@ repositories {
 
 dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.1")
-    implementation("de.thecommcraft:scratchdsl:0.0.0a2")
+    implementation("de.thecommcraft:scratchdsl:0.0.1a2")
 }
 ```
 
