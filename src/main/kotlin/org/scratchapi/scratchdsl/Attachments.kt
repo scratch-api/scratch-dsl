@@ -1,11 +1,7 @@
 package org.scratchapi.scratchdsl
 
 import kotlinx.serialization.json.*
-import java.math.BigInteger
-import java.nio.file.Files
-import java.nio.file.Path
-import java.security.MessageDigest
-import kotlin.io.path.*
+import okio.Path
 
 interface Asset {
     val name: String
@@ -29,9 +25,8 @@ interface Asset {
 }
 
 fun getChecksum(path: Path): String {
-    val data = Files.readAllBytes(path)
-    val hash = MessageDigest.getInstance("MD5").digest(data)
-    return BigInteger(1, hash).toString(16)
+    val data = path.readFile { readByteString() }
+    return data.md5().hex()
 }
 
 internal fun loadCostume(path: Path, name: String, bitmapResolution: Int = 1, rotationCenter: Pair<Double, Double>? = null): Costume {

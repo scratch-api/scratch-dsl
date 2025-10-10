@@ -4,7 +4,6 @@ package org.scratchapi.scratchdsl
 
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.*
-import org.scratchapi.scratchdsl.SpecialLocation.Companion
 
 val SpriteBuilder.specialLocation get() = SpecialLocation.of(name)
 

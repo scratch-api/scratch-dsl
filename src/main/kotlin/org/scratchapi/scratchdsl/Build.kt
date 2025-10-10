@@ -10,11 +10,11 @@ import kotlinx.io.writeString
 import kotlinx.io.files.Path as PathB
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.*
-import java.nio.file.Path
 import kotlin.random.Random
 import okhttp3.*
-import java.util.zip.ZipFile
-import kotlin.io.path.*
+import okio.*
+import okio.ByteString.Companion.encodeUtf8
+import okio.Path.Companion.toPath
 
 interface HasId {
     var id: String
@@ -238,10 +238,7 @@ class BuildRoot internal constructor() : Representable<Representation> {
     fun extractMonitorDataFrom(path: Path) {
         val projectJson =
             if (path.extension == "zip") {
-                val zipFile = ZipFile(path.toFile())
-                zipFile.getInputStream(zipFile.getEntry("project.json"))
-                    .readAllBytes()
-                    .decodeToString()
+                defaultFileSystem.openZip(path).read("project.json".toPath()) { readUtf8() }
             } else {
                 path.readText()
             }
@@ -625,14 +622,31 @@ internal data class AssetResource(
     }
 }
 
+internal fun BuildRoot.locateResources(assets: List<Asset>): Map<Asset, Path> {
+    val paths = mutableMapOf<Asset, Path>()
+    assetDirectories.forEach { dir ->
+        if (!dir.metaData().isDirectory) return@forEach
+        val files = defaultFileSystem.list(dir)
+            .filter { it.metaData().isRegularFile }.associateBy { path -> path.name }
+        assets.forEach { asset ->
+            files[asset.md5Ext]?.let {
+                paths[asset] = it
+            } ?: files["${asset.name}.${asset.dataFormat}"]?.let {
+                paths[asset] = it
+            }
+        }
+    }
+    return paths
+}
+
 internal fun BuildRoot.locateResource(asset: Asset): Path {
     assetDirectories.forEach { dir ->
-        if (!dir.isDirectory()) return@forEach
-        dir.listDirectoryEntries().forEach entries@{ path ->
-            if (!path.isRegularFile()) return@entries
+        if (!dir.metaData().isDirectory) return@forEach
+        defaultFileSystem.list(dir).forEach entries@ { path ->
+            if (!path.metaData().isRegularFile) return@entries
             if (
-                path.fileName.toString() == asset.md5Ext ||
-                path.fileName.toString() == "${asset.name}.${asset.dataFormat}"
+                path.name == asset.md5Ext ||
+                path.name == "${asset.name}.${asset.dataFormat}"
             ) {
                 return path
             }
@@ -642,26 +656,32 @@ internal fun BuildRoot.locateResource(asset: Asset): Path {
 }
 
 internal fun BuildRoot.getResources(): Map<String, AssetResource> {
+    val requiresSearch = mutableListOf<Asset>()
     val resources = mutableMapOf<String, AssetResource>()
     targets.forEach { target ->
-        target.costumes.forEach { (_, costume) ->
+        target.costumes.forEach find@ { (_, costume) ->
             resources[costume.md5Ext] = if (costume.path != null) {
                 AssetResource(path = costume.path)
             } else if (costume.data != null) {
                 AssetResource(source = Buffer().apply { write(costume.data) })
             } else {
-                AssetResource(path = locateResource(costume))
+                requiresSearch.add(costume)
+                return@find
             }
         }
-        target.sounds.forEach { (_, sound) ->
+        target.sounds.forEach find@ { (_, sound) ->
             resources[sound.md5Ext] = if (sound.path != null) {
                 AssetResource(path = sound.path)
             } else if (sound.data != null) {
                 AssetResource(source = Buffer().apply { write(sound.data) })
             } else {
-                AssetResource(path = locateResource(sound))
+                requiresSearch.add(sound)
+                return@find
             }
         }
+    }
+    locateResources(requiresSearch).forEach { (asset, path) ->
+        resources[asset.md5Ext] = AssetResource(path = path)
     }
     return resources
 }
@@ -675,7 +695,27 @@ fun ProjectJson.writeToProjectJsonPath(path: Path) = path.writeText(string)
 /**
  * Writes the project json into an existing scratch project.
  */
-fun ProjectJson.modifyProject(path: Path) {
+fun ProjectJson.modifyProject(path: Path, addResources: Boolean = false) {
+    if (addResources) {
+        val resources = buildRoot.getResources()
+        try {
+            Buffer().apply { writeString(string) }.use { textSource ->
+                Zip.open(PathB(path.toString()), mode=Zip.Mode.Append).use { zip ->
+                    zip.entryFromSource(PathB("project.json"), textSource)
+                    resources.forEach { (name, resource) ->
+                        resource.source?.let {
+                            zip.entryFromSource(PathB(name), it)
+                        } ?: resource.path?.let {
+                            zip.entryFromPath(PathB(name), PathB(it.toString()))
+                        }
+                    }
+                }
+            }
+        } finally {
+            resources.values.forEach(AutoCloseable::close)
+        }
+        return
+    }
     Buffer().apply { writeString(string) }.use { textSource ->
         Zip.open(PathB(path.toString()), mode=Zip.Mode.Append).use { zip ->
             zip.entryFromSource(PathB("project.json"), textSource)
@@ -690,6 +730,7 @@ fun ProjectJson.writeTo(path: Path) {
     val resources = buildRoot.getResources()
     try {
         Buffer().apply { writeString(string) }.use { textSource ->
+
             Zip.open(PathB(path.toString()), mode=Zip.Mode.Write).use { zip ->
                 zip.entryFromSource(PathB("project.json"), textSource)
                 resources.forEach { (name, resource) ->
@@ -710,8 +751,6 @@ fun ProjectJson.writeTo(path: Path) {
  * Prints out the string.
  */
 fun ProjectJson.output() = println(string)
-
-val String.path get() = Path(this)
 
 object IdGenerator {
     const val ALLOWED_CHARS = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
@@ -743,3 +782,17 @@ object IdGenerator {
         }.joinToString("")
     }
 }
+
+internal val Path.extension get() = name.split(".").last()
+
+internal fun<T> Path.writeFile(mustCreate: Boolean = false, writerAction: BufferedSink.() -> T) = defaultFileSystem.write(this, mustCreate, writerAction)
+
+internal fun Path.writeText(text: String): Unit = writeFile { write(text.encodeUtf8()) }
+
+internal fun<T> Path.readFile(readerAction: BufferedSource.() -> T) = defaultFileSystem.read(this, readerAction)
+
+internal fun Path.readText() = readFile { readUtf8() }
+
+internal fun Path.metaData() = defaultFileSystem.metadata(this)
+
+val defaultFileSystem by lazy { FileSystem.SYSTEM }
