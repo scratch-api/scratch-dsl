@@ -27,9 +27,31 @@ abstract class NormalShadowExpressionShouldCopy(opcode: String?) : NormalShadowE
 interface SpecialLocation : ShadowExpression, ShadowShouldCopy {
     companion object {
         val random = of("_random_")
+        val default = random
         val mouse = of("_mouse_")
         fun of(target: String, opcode: String? = null): SpecialLocation =
             object : NormalShadowExpressionShouldCopy(null), SpecialLocation, OpcodeSettableShadowExpression {
+                override val target = target
+                override fun representAlone(): Representation =
+                    JsonPrimitive(id)
+                override var opcode: String? = opcode
+                init {
+                    fields["TO"] = Field.of(target)
+                }
+
+                override fun makeCopy() = of(this.target, this.opcode)
+            }
+    }
+    val target: String
+}
+
+interface SpecialDirection : ShadowExpression, ShadowShouldCopy {
+    companion object {
+        val random = of("_random_")
+        val mouse = of("_mouse_")
+        val default = mouse
+        fun of(target: String, opcode: String? = null): SpecialDirection =
+            object : NormalShadowExpressionShouldCopy(null), SpecialDirection, OpcodeSettableShadowExpression {
                 override val target = target
                 override fun representAlone(): Representation =
                     JsonPrimitive(id)

@@ -151,6 +151,9 @@ abstract class NormalShadowExpression(opcode: String? = null) : NormalExpression
     }
 }
 
+/**
+ * Represents mathematical operations that can be applied to a number.
+ */
 enum class MathOps(val code: String) {
     ABS("abs"),
     FLOOR("floor"),
@@ -166,6 +169,11 @@ enum class MathOps(val code: String) {
     LOG("log"),
     EXP("e ^"),
     POW("10 ^");
+
+    /**
+     * Applies the mathematical operation to an expression.
+     * @param expression The number to apply the operation on.
+     */
     fun of(expression: Expression?) =
         NormalUnaryOp(
             "operator_mathop",
@@ -175,6 +183,9 @@ enum class MathOps(val code: String) {
         ).withField("OPERATOR", Field.of(code))
 }
 
+/**
+ * Represents the different types of value inputs in Scratch.
+ */
 enum class ValueInput(val opcode: String, val numericType: Int) {
     NUMBER("math_number", 4),
     POSITIVE_NUMBER("math_positive_number", 5),
@@ -183,7 +194,17 @@ enum class ValueInput(val opcode: String, val numericType: Int) {
     ANGLE("math_angle", 8),
     COLOUR_PICKER("colour_picker", 9),
     TEXT("text", 10);
+
+    /**
+     * Creates a shadow expression with a specific string value.
+     * @param value The value for the input.
+     */
     fun of(value: String) = ValueShadowExpression(value, opcode)
+
+    /**
+     * Creates a shadow expression from a [JsonPrimitive].
+     * @param value The JSON primitive value.
+     */
     fun of(value: JsonPrimitive) =
         if (value.isString) ValueShadowExpression(value.content)
         else ValueShadowExpression(value.toString(), opcode)

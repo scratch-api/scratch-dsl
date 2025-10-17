@@ -33,8 +33,18 @@ interface Flattenable {
 }
 
 interface HatBlockHost {
+    /**
+     * Adds a hat block to this host.
+     * @param hatBlock The hat block to add.
+     * @return The added hat block.
+     */
     fun<B: HatBlock> addHatBlock(hatBlock: B): B
 
+    /**
+     * Implements the logic for a custom block procedure.
+     * @param block The blocks to run when the procedure is called.
+     * @return The created [Procedure].
+     */
     fun ProcedurePrototypeBuilder.impl(block: BlockHost.() -> Unit): Procedure {
         val procedurePrototype = ProcedurePrototype(proccode, warp, arguments)
         makeProcedureDefinition(procedurePrototype, block)
@@ -46,18 +56,36 @@ interface HatBlockHost {
 }
 
 interface BlockHost {
+    /**
+     * Adds a block to this host.
+     * @param block The block to add.
+     * @return The added block.
+     */
     fun<B: AnyBlock> addBlock(block: B): B
     val stacks: List<BlockStack>
 
+    /**
+     * Replaces an item at a specific index in a list.
+     * @param index The index of the item to replace.
+     * @param value The new value.
+     */
     operator fun ScratchList.set(index: Expression?, value: Expression?) =
         replaceAtIndex(this, value, index)
 
+    /**
+     * Sets the value of a settable property (like x-position, y-position, etc.).
+     * @param value The new value.
+     */
     infix fun HandlesSet.set(value: Expression?) =
         this.expressionSetHandler?.let {
             addBlock(it(value))
         } ?: (NormalBlock("motion_movesteps")
             .withExpression("STEPS", shadowExpression = ValueInput.NUMBER.of("0")))
 
+    /**
+     * Changes the value of a settable property by a certain amount.
+     * @param value The amount to change by.
+     */
     infix fun HandlesSet.changeBy(value: Expression?) =
         this.expressionChangeHandler?.let {
             addBlock(it(value))
@@ -68,18 +96,39 @@ interface BlockHost {
             .withExpression("STEPS", shadowExpression = ValueInput.NUMBER.of("0"))))
 
 
+    /**
+     * Appends a value to a list.
+     * @param value The value to append.
+     */
     infix fun ScratchList.append(value: Expression?) =
         this@BlockHost.append(this, value)
 
+    /**
+     * Deletes all items from a list.
+     */
     fun ScratchList.deleteAll() =
         this@BlockHost.deleteAll(this)
 
+    /**
+     * Deletes an item at a specific index from a list.
+     * @param value The index of the item to delete.
+     */
     fun ScratchList.deleteAtIndex(value: Expression?) =
         this@BlockHost.deleteAtIndex(this, value)
 
+    /**
+     * Inserts an item at a specific index in a list.
+     * @param value The value to insert.
+     * @param index The index to insert at.
+     */
     fun ScratchList.insertAtIndex(value: Expression?, index: Expression?) =
         this@BlockHost.insertAtIndex(this, value, index)
 
+    /**
+     * Calls a custom block procedure.
+     * @param arguments The arguments to pass to the procedure.
+     * @return The created procedure call block.
+     */
     fun Procedure.call(vararg arguments: Expression?): NormalBlock {
         val block = NormalBlock("procedures_call")
             .withDefaultMutation()
@@ -207,37 +256,50 @@ class BuildRoot internal constructor() : Representable<Representation> {
         })
     }
 
-    fun stage(block: StageBuilder.() -> Unit) =
-        stage.apply(block)
-
-    fun sprite(block: SpriteBuilder.() -> Unit) = SpriteBuilder(this).apply {
-        sprites.add(this)
-        block()
+    /**
+     * Configures the stage.
+     * @param block The configuration code block for the stage.
+     */
+    fun stage(block: StageBuilder.() -> Unit) = stage.apply {
+        builder = block
     }
 
     /**
+     * Creates and configures a new sprite.
+     * @param block The configuration code block for the sprite.
+     */
+    fun sprite(block: SpriteBuilder.() -> Unit) = SpriteBuilder(this).apply {
+        sprites.add(this)
+        builder = block
+    }
+
+    /**
+     * Attaches monitor data from a JSON string.
      * Can be obtained by first building without it, then configuring the monitors in the scratch editor and
-     * extracting it from the project.json.
-     *
-     * Not required.
+     * extracting it from the project.json. Not required.
+     * @param json The JSON string containing monitor data.
      */
     fun attachMonitorData(json: String) {
         monitorData = Json.decodeFromString<Representation>(json)
     }
 
     /**
+     * Attaches monitor data from a JSON element.
      * Can be obtained by first building without it, then configuring the monitors in the scratch editor and
-     * extracting it from the project.json.
-     *
-     * Not required.
+     * extracting it from the project.json. Not required.
+     * @param json The JSON representation of the monitor data.
      */
     fun attachMonitorData(json: Representation) {
         monitorData = json
     }
 
+    /**
+     * Extracts monitor data from a project file (project.json or .sb3).
+     * @param path The path to the project file.
+     */
     fun extractMonitorDataFrom(path: Path) {
         val projectJson =
-            if (path.extension == "zip") {
+            if (path.extension == "zip" || path.extension == "sb3") {
                 defaultFileSystem.openZip(path).read("project.json".toPath()) { readUtf8() }
             } else {
                 path.readText()
@@ -246,10 +308,20 @@ class BuildRoot internal constructor() : Representable<Representation> {
         decodedProjectJson.jsonObject["monitors"]?.let { attachMonitorData(it) }
     }
 
+    /**
+     * Adds a Scratch extension to the project.
+     * @param extensionRepresentation The JSON representation of the extension.
+     */
     fun addExtension(extensionRepresentation: Representation) {
         extensions.add(extensionRepresentation)
     }
 
+    /**
+     * Creates a global variable.
+     * @param name The name of the variable.
+     * @param value The initial value.
+     * @param cloud Whether it is a cloud variable.
+     */
     fun makeGlobalVar(
         name: String = IdGenerator.makeRandomId(6),
         value: JsonPrimitive = JsonPrimitive(""),
@@ -257,21 +329,41 @@ class BuildRoot internal constructor() : Representable<Representation> {
     ) =
         stage.makeVar(name, value, cloud)
 
+    /**
+     * Creates a global list.
+     * @param name The name of the list.
+     * @param value The initial contents of the list.
+     */
     fun makeGlobalList(
         name: String = IdGenerator.makeRandomId(6),
         value: JsonArray
     ) =
         stage.makeList(name, value)
 
+    /**
+     * Creates a global list with a builder.
+     * @param name The name of the list.
+     * @param block The builder for the list's contents.
+     */
     fun makeGlobalList(
         name: String = IdGenerator.makeRandomId(6),
         block: JsonArrayBuilder.() -> Unit
     ) =
         stage.makeList(name, block)
 
+    /**
+     * Creates a global broadcast message.
+     * @param name The name of the broadcast message.
+     */
     fun makeBroadcast(name: String = IdGenerator.makeRandomId(6)) =
         stage.makeBroadcast(name)
 
+    /**
+     * Creates a local variable slot for use in sprites.
+     * @param name The name of the variable.
+     * @param value The initial value.
+     * @param cloud Whether it is a cloud variable.
+     */
     fun makeLocalVarSlot(
         name: String = IdGenerator.makeRandomId(6),
         value: JsonPrimitive = JsonPrimitive(""),
@@ -279,21 +371,44 @@ class BuildRoot internal constructor() : Representable<Representation> {
     ) =
         VariableSlot(name, value, cloud)
 
+    /**
+     * Creates a local list slot for use in sprites.
+     * @param name The name of the list.
+     * @param value The initial contents.
+     */
     fun makeLocalListSlot(
         name: String = IdGenerator.makeRandomId(6),
         value: JsonArray
     ) =
         ScratchListSlot(name, value)
 
+    /**
+     * Creates a local list slot with a builder for use in sprites.
+     * @param name The name of the list.
+     * @param block The builder for the list's contents.
+     */
     fun makeLocalListSlot(
         name: String = IdGenerator.makeRandomId(6),
         block: JsonArrayBuilder.() -> Unit
     ) =
         ScratchListSlot(name, block)
 
+    /**
+     * Creates a local broadcast slot for use in sprites.
+     * @param name The name of the broadcast message.
+     */
     fun makeLocalBroadcastSlot(name: String = IdGenerator.makeRandomId(6)) =
         BroadcastSlot(name)
 
+    /**
+     * Adds a backdrop to the stage.
+     * @param name The name of the backdrop.
+     * @param dataFormat The format of the asset (e.g., "svg", "png").
+     * @param assetId The MD5 hash of the asset file.
+     * @param rotationCenter The center of rotation.
+     * @param bitmapResolution The resolution for bitmap images.
+     * @param path The local path to the asset file (optional).
+     */
     fun addBackdrop(
         name: String,
         dataFormat: String,
@@ -303,6 +418,11 @@ class BuildRoot internal constructor() : Representable<Representation> {
         path: Path? = null
     ) = stage.addBackdrop(name, dataFormat, assetId, rotationCenter, bitmapResolution, path)
 
+    /**
+     * Adds a backdrop from a local file path.
+     * @param path The path to the backdrop file.
+     * @param name The name for the backdrop.
+     */
     fun addBackdrop(
         path: Path,
         name: String
@@ -322,6 +442,7 @@ fun getHttp(url: String): ByteArray? {
 
 class StageBuilder internal constructor(root: BuildRoot) : HatBlockHost {
     internal val spriteBuilder = SpriteBuilder(root)
+    internal var builder: (StageBuilder.() -> Unit)? = null
 
     init {
         spriteBuilder.isStage = true
@@ -333,26 +454,55 @@ class StageBuilder internal constructor(root: BuildRoot) : HatBlockHost {
 
     val backdrops: List<Backdrop> = backdropList
 
+    /**
+     * Creates a global variable (scoped to the stage).
+     * @param name The name of the variable.
+     * @param value The initial value.
+     * @param cloud Whether it is a cloud variable.
+     */
     fun makeVar(
         name: String = IdGenerator.makeRandomId(6),
         value: JsonPrimitive = JsonPrimitive(""),
         cloud: Boolean = false
     ) = spriteBuilder.makeVar(name, value, cloud)
 
+    /**
+     * Creates a global list (scoped to the stage).
+     * @param name The name of the list.
+     * @param value The initial contents.
+     */
     fun makeList(
         name: String = IdGenerator.makeRandomId(6),
         value: JsonArray
     ) = spriteBuilder.makeList(name, value)
 
+    /**
+     * Creates a global list with a builder (scoped to the stage).
+     * @param name The name of the list.
+     * @param block The builder for the list's contents.
+     */
     fun makeList(
         name: String = IdGenerator.makeRandomId(6),
         block: JsonArrayBuilder.() -> Unit
     ) = spriteBuilder.makeList(name, block)
 
+    /**
+     * Creates a global broadcast message (scoped to the stage).
+     * @param name The name of the broadcast.
+     */
     fun makeBroadcast(
         name: String = IdGenerator.makeRandomId(6)
     ) = spriteBuilder.makeLocalBroadcast(name)
 
+    /**
+     * Adds a backdrop to the stage.
+     * @param name The name of the backdrop.
+     * @param dataFormat The format of the asset.
+     * @param assetId The MD5 hash of the asset file.
+     * @param rotationCenter The center of rotation.
+     * @param bitmapResolution The resolution for bitmap images.
+     * @param path The local path to the asset file.
+     */
     fun addBackdrop(
         name: String,
         dataFormat: String,
@@ -366,6 +516,11 @@ class StageBuilder internal constructor(root: BuildRoot) : HatBlockHost {
         return backdrop
     }
 
+    /**
+     * Adds a backdrop from a local file.
+     * @param path The path to the backdrop file.
+     * @param name The name for the backdrop.
+     */
     fun addBackdrop(
         path: Path,
         name: String
@@ -375,6 +530,15 @@ class StageBuilder internal constructor(root: BuildRoot) : HatBlockHost {
         return backdrop
     }
 
+    /**
+     * Adds a sound to the stage.
+     * @param name The name of the sound.
+     * @param dataFormat The format of the sound file.
+     * @param assetId The MD5 hash of the sound file.
+     * @param rate The sample rate.
+     * @param sampleCount The number of samples.
+     * @param path The local path to the sound file.
+     */
     fun addSound(
         name: String,
         dataFormat: String,
@@ -384,6 +548,11 @@ class StageBuilder internal constructor(root: BuildRoot) : HatBlockHost {
         path: Path? = null
     ) = spriteBuilder.addSound(name, dataFormat, assetId, rate, sampleCount, path)
 
+    /**
+     * Adds a sound from a local file to the stage.
+     * @param path The path to the sound file.
+     * @param name The name for the sound.
+     */
     fun addSound(
         path: Path,
         name: String
@@ -391,6 +560,7 @@ class StageBuilder internal constructor(root: BuildRoot) : HatBlockHost {
 }
 
 class SpriteBuilder internal constructor(val root: BuildRoot) : HatBlockHost, Representable<Representation> {
+    internal var builder: (SpriteBuilder.() -> Unit)? = null
     val hatBlocks = mutableListOf<HatBlock>()
     val variables = mutableMapOf<String, Triple<Variable, JsonPrimitive, Boolean>>()
     val lists = mutableMapOf<String, Pair<ScratchList, JsonArray>>()
@@ -487,6 +657,12 @@ class SpriteBuilder internal constructor(val root: BuildRoot) : HatBlockHost, Re
         }
     }
 
+    /**
+     * Creates a local variable for this sprite.
+     * @param name The name of the variable.
+     * @param value The initial value.
+     * @param cloud Not applicable for local variables.
+     */
     fun makeVar(
         name: String = IdGenerator.makeRandomId(6),
         value: JsonPrimitive = JsonPrimitive(""),
@@ -498,6 +674,11 @@ class SpriteBuilder internal constructor(val root: BuildRoot) : HatBlockHost, Re
         variables[this.name] = Triple(this, value, cloud)
     }
 
+    /**
+     * Creates a local list for this sprite.
+     * @param name The name of the list.
+     * @param jsonArray The initial contents.
+     */
     fun makeList(
         name: String = IdGenerator.makeRandomId(6),
         jsonArray: JsonArray
@@ -509,12 +690,21 @@ class SpriteBuilder internal constructor(val root: BuildRoot) : HatBlockHost, Re
         lists[this.name] = this to jsonArray
     }
 
+    /**
+     * Creates a local list for this sprite with a builder.
+     * @param name The name of the list.
+     * @param block The builder for the list's contents.
+     */
     fun makeList(
         name: String = IdGenerator.makeRandomId(6),
         block: JsonArrayBuilder.() -> Unit
     ) = makeList(name, buildJsonArray(block))
 
 
+    /**
+     * Creates a local broadcast message for this sprite.
+     * @param name The name of the broadcast message.
+     */
     fun makeLocalBroadcast(
         name: String = IdGenerator.makeRandomId(6)
     ) = Broadcast(if (shouldScrambleNames) IdGenerator.makeRandomId(6) else name).apply {
@@ -524,33 +714,59 @@ class SpriteBuilder internal constructor(val root: BuildRoot) : HatBlockHost, Re
         broadcasts[this.name] = this
     }
 
+    /**
+     * Creates a local variable from a variable slot.
+     * @param variableSlot The slot defining the variable.
+     */
     fun makeVar(variableSlot: VariableSlot) =
         makeVar(variableSlot.name, variableSlot.value, variableSlot.cloud).apply {
             id = variableSlot.id
         }
 
+    /**
+     * Creates a local list from a list slot.
+     * @param listSlot The slot defining the list.
+     */
     fun makeList(listSlot: ScratchListSlot) =
         makeList(listSlot.name, listSlot.value).apply {
             id = listSlot.id
         }
 
+    /**
+     * Creates a local broadcast from a broadcast slot.
+     * @param broadcastSlot The slot defining the broadcast.
+     */
     fun makeBroadcast(broadcastSlot: BroadcastSlot) =
         makeLocalBroadcast(broadcastSlot.name).apply {
             id = broadcastSlot.id
         }
 
+    /**
+     * Configures the builder to use random names for subsequent local variables, lists, and broadcasts.
+     */
     fun scrambleLocalNamesAfter() {
         shouldScrambleNames = true
     }
 
+    /** Adds a costume to this sprite. */
     operator fun Costume.unaryPlus() = apply {
         costumes[name] = this
     }
 
+    /** Adds a sound to this sprite. */
     operator fun Sound.unaryPlus() = apply {
         sounds[name] = this
     }
 
+    /**
+     * Adds a costume to the sprite.
+     * @param name The name of the costume.
+     * @param dataFormat The format of the asset.
+     * @param assetId The MD5 hash of the asset file.
+     * @param rotationCenter The center of rotation.
+     * @param bitmapResolution The resolution for bitmap images.
+     * @param path The local path to the asset file.
+     */
     fun addCostume(
         name: String,
         dataFormat: String,
@@ -560,6 +776,13 @@ class SpriteBuilder internal constructor(val root: BuildRoot) : HatBlockHost, Re
         path: Path? = null
     ) = +Costume(name, dataFormat, assetId, rotationCenter, bitmapResolution, path)
 
+    /**
+     * Adds a costume from a local file.
+     * @param path The path to the costume file.
+     * @param name The name for the costume.
+     * @param bitmapResolution The resolution for bitmap images.
+     * @param rotationCenter The center of rotation.
+     */
     fun addCostume(
         path: Path,
         name: String,
@@ -567,6 +790,15 @@ class SpriteBuilder internal constructor(val root: BuildRoot) : HatBlockHost, Re
         rotationCenter: Pair<Double, Double>? = null
     ) = +loadCostume(path, name, bitmapResolution, rotationCenter)
 
+    /**
+     * Adds a sound to the sprite.
+     * @param name The name of the sound.
+     * @param dataFormat The format of the sound file.
+     * @param assetId The MD5 hash of the sound file.
+     * @param rate The sample rate.
+     * @param sampleCount The number of samples.
+     * @param path The local path to the sound file.
+     */
     fun addSound(
         name: String,
         dataFormat: String,
@@ -576,6 +808,11 @@ class SpriteBuilder internal constructor(val root: BuildRoot) : HatBlockHost, Re
         path: Path? = null
     ) = +Sound(name, dataFormat, assetId, rate, sampleCount, path)
 
+    /**
+     * Adds a sound from a local file.
+     * @param path The path to the sound file.
+     * @param name The name for the sound.
+     */
     fun addSound(
         path: Path,
         name: String
@@ -584,6 +821,11 @@ class SpriteBuilder internal constructor(val root: BuildRoot) : HatBlockHost, Re
 
 typealias Sprite = SpriteBuilder
 
+/**
+ * The entry point for building a Scratch project.
+ * @param block The main builder lambda where you define the stage, sprites, and scripts.
+ * @return The root object of the build process.
+ */
 fun build(block: BuildRoot.() -> Unit) =
     BuildRoot().apply(block)
 
@@ -592,22 +834,28 @@ data class ProjectJson(
     val buildRoot: BuildRoot
 )
 
+/**
+ * Converts the built project into a [ProjectJson] object containing the JSON string.
+ */
 fun BuildRoot.toProjectJsonContents() = ProjectJson(Json.encodeToString(represent()), this)
 
 /**
- * Writes the project json into a file at the path.
+ * Writes the project JSON to a file at the specified path.
+ * @param path The destination file path.
  */
 fun BuildRoot.writeToProjectJsonPath(path: Path) = toProjectJsonContents().writeToProjectJsonPath(path)
 
 /**
- * Writes the project json into an existing scratch project.
+ * Modifies an existing Scratch project file (.sb3) with the generated project JSON.
+ * @param path The path to the .sb3 file to modify.
  */
 fun BuildRoot.modifyProject(path: Path) {
     toProjectJsonContents().modifyProject(path)
 }
 
 /**
- * Uses the project json and the included assets to create a sb3 file.
+ * Writes the project to a .sb3 file, including all assets.
+ * @param path The destination path for the .sb3 file.
  */
 fun BuildRoot.writeTo(path: Path) {
     toProjectJsonContents().writeTo(path)
@@ -688,12 +936,15 @@ internal fun BuildRoot.getResources(): Map<String, AssetResource> {
 
 
 /**
- * Writes the project json into a file at the path.
+ * Writes the project JSON to a file at the specified path.
+ * @param path The destination file path.
  */
 fun ProjectJson.writeToProjectJsonPath(path: Path) = path.writeText(string)
 
 /**
- * Writes the project json into an existing scratch project.
+ * Modifies an existing Scratch project file (.sb3) with the generated project JSON and optionally adds resources.
+ * @param path The path to the .sb3 file to modify.
+ * @param addResources If true, assets will also be added to the project file.
  */
 fun ProjectJson.modifyProject(path: Path, addResources: Boolean = false) {
     if (addResources) {
@@ -724,7 +975,8 @@ fun ProjectJson.modifyProject(path: Path, addResources: Boolean = false) {
 }
 
 /**
- * Uses the project json and the included assets to create a sb3 file.
+ * Writes the project to a .sb3 file, including the project JSON and all assets.
+ * @param path The destination path for the .sb3 file.
  */
 fun ProjectJson.writeTo(path: Path) {
     val resources = buildRoot.getResources()
@@ -748,7 +1000,7 @@ fun ProjectJson.writeTo(path: Path) {
 }
 
 /**
- * Prints out the string.
+ * Prints the generated project JSON to the console.
  */
 fun ProjectJson.output() = println(string)
 
