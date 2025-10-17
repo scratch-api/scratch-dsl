@@ -12,9 +12,9 @@ plugins {
     kotlin("plugin.serialization") version "2.0.10"
 }
 
-group = "de.thecommcraft"
+group = "org.scratchapi"
 version = (System.getenv("GITHUB_REF_NAME")?.removePrefix("v")
-    ?: "0.0.1a2")
+    ?: "0.0.1a3")
 
 java {
     withJavadocJar()
@@ -82,12 +82,16 @@ publishing {
 }
 
 signing {
-    System.getenv("GPG_PRIVATE_KEY")?.let {
-        useInMemoryPgpKeys(
-            System.getenv("GPG_PRIVATE_KEY"),
-            System.getenv("GPG_PASSPHRASE")
-        )
-    } ?: useGpgCmd()
+    if (System.getenv("USE_PGP_CMD_FOR_SCRATCH_DSL") == "true") {
+        useGpgCmd()
+    } else {
+        System.getenv("GPG_PRIVATE_KEY")?.let {
+            useInMemoryPgpKeys(
+                System.getenv("GPG_PRIVATE_KEY"),
+                System.getenv("GPG_PASSPHRASE")
+            )
+        } ?: useGpgCmd()
+    }
     sign(publishing.publications["mavenJava"])
 }
 
