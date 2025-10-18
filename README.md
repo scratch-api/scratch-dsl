@@ -10,7 +10,7 @@ repositories {
 
 dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.1")
-    implementation("de.thecommcraft:scratchdsl:0.0.1a2")
+    implementation("org.scratchapi:scratchdsl:0.0.1a4")
 }
 ```
 
@@ -59,5 +59,9 @@ fun main() =
         .toProjectJsonContents() // Encode to json
         .output() // Print the json output
 ```
+
+## API Reference
+
+You can find the API Reference of Scratch DSL [here](https://scratchdsl.scratchapi.org/).
 
 ### More coming soon!
