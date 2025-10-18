@@ -5,18 +5,25 @@ package org.scratchapi.scratchdsl
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.*
 
+/** Creates a [SpecialLocation] corresponding to the sprite. */
 val SpriteBuilder.specialLocation get() = SpecialLocation.of(name)
 
+/** Creates a [CloneTarget] corresponding to the sprite. */
 val SpriteBuilder.cloneTarget get() = CloneTarget.of(name)
 
+/** Creates a [TouchObject] corresponding to the sprite. */
 val SpriteBuilder.touchObject get() = TouchObject.of(name)
 
+/** Creates a [DistanceObject] corresponding to the sprite. */
 val SpriteBuilder.distanceObject get() = DistanceObject.of(name)
 
+/** Creates a [PropertyTarget] corresponding to the sprite. */
 val SpriteBuilder.propertyTarget get() = PropertyTarget.of(name)
 
+/** Creates a [Property] corresponding to the variable. */
 val VariableLike.property get() = Property.of(name)
 
+/** Creates a [SensingKey] corresponding to the [KeyboardKey] instance. */
 val KeyboardKey.sensingKey get() = SensingKey.of(this)
 
 abstract class NormalShadowExpressionShouldCopy(opcode: String?) : NormalShadowExpression(opcode), ShadowShouldCopy {
