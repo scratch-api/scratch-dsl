@@ -6,7 +6,7 @@ import java.time.Duration
 
 plugins {
     id("io.github.gradle-nexus.publish-plugin") version "2.0.0"
-    id("org.jetbrains.dokka") version "1.9.20"
+    id("org.jetbrains.dokka") version "2.1.0"
     `maven-publish`
     signing
     kotlin("jvm") version "2.0.0"
@@ -95,6 +95,13 @@ signing {
     }
     sign(publishing.publications["mavenJava"])
 }
+
+tasks.dokkaHtml {
+    dokkaSourceSets.configureEach {
+        classpath.from(files(sourceSets.main.get().compileClasspath))
+    }
+}
+
 
 
 nexusPublishing {
