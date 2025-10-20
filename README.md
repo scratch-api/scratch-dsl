@@ -10,7 +10,7 @@ repositories {
 
 dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.1")
-    implementation("org.scratchapi:scratchdsl:0.0.1a4")
+    implementation("org.scratchapi:scratchdsl:0.0.1a5")
 }
 ```
 
@@ -19,7 +19,7 @@ dependencies {
 Code example:
 
 ```kotlin
-import kotlin.io.path.Path
+import okio.Path.Companion.toPath
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.add
 import org.scratchapi.scratchdsl.*
@@ -27,14 +27,14 @@ import org.scratchapi.scratchdsl.*
 fun main() =
     build {
         stage {
-            val backdrop1 = addBackdrop(Path("path/to/image"), "name_of_backdrop")
+            val backdrop1 = addBackdrop("path/to/image".toPath(), "name_of_backdrop")
             whenGreenFlagClicked {
                 switchToBackdrop(backdrop1)
             }
         }
         sprite {
             name = "sprite_name"
-            val costume1 = addCostume(Path("path/to/image"), "name_of_costume")
+            val costume1 = addCostume("path/to/image".toPath(), "name_of_costume")
             val variable = makeVar(
                 "variable_name", // Optional, defaults to a random string
                 JsonPrimitive("default_value"), // Optional, defaults to an empty string
