@@ -15,7 +15,7 @@ plugins {
 
 group = "org.scratchapi"
 version = (System.getenv("GITHUB_REF_NAME")?.removePrefix("v")
-    ?: "0.0.1a3")
+    ?: "0.0.1a5")
 
 java {
     withJavadocJar()

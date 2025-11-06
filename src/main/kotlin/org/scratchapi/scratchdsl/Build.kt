@@ -238,6 +238,9 @@ class BuildRoot internal constructor() : Representable<Representation> {
     val assetDirectories = mutableListOf<Path>()
 
     override fun represent() = buildJsonObject {
+        targets.forEach {
+            it.builder?.let { it1 -> it1(it) }
+        }
         targets.forEach(SpriteBuilder::prepareRepresent)
         put("targets", buildJsonArray {
             targets.forEach { target ->
@@ -429,16 +432,16 @@ class BuildRoot internal constructor() : Representable<Representation> {
     ) = stage.addBackdrop(path, name)
 }
 
-val httpClient = OkHttpClient()
-
-fun getHttp(url: String): ByteArray? {
-    val request = Request.Builder()
-        .url(url)
-        .build()
-
-    val response = httpClient.newCall(request).execute()
-    return response.body?.bytes()
-}
+//val httpClient = OkHttpClient()
+//
+//fun getHttp(url: String): ByteArray? {
+//    val request = Request.Builder()
+//        .url(url)
+//        .build()
+//
+//    val response = httpClient.newCall(request).execute()
+//    return response.body?.bytes()
+//}
 
 class StageBuilder internal constructor(root: BuildRoot) : HatBlockHost {
     internal val spriteBuilder = SpriteBuilder(root)
