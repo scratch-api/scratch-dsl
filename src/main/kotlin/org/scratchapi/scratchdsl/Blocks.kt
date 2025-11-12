@@ -528,8 +528,8 @@ val yPosition get() =
                 .withExpression("DY", dy, ValueInput.NUMBER.of("10"))
         }
 
-/** A reporter for the sprite's rotation. Can also be used to set or change the rotation. */
-val rotation get() =
+/** A reporter for the sprite's direction. Can also be used to set or change the direction. */
+val direction get() =
     HandlesSetNormalExpression("motion_direction")
         .withHandlesSet { direction ->
             NormalBlock("motion_pointindirection")
@@ -539,6 +539,10 @@ val rotation get() =
             NormalBlock("motion_turnright")
                 .withExpression("DEGREES", degrees, ValueInput.NUMBER.of("15"))
         }
+
+@Deprecated("\"rotation\" is a bad name. ", replaceWith = ReplaceWith("direction"))
+val rotation inline get() =
+    direction
 
 
 // Looks
